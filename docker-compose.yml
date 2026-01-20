@@ -1,0 +1,56 @@
+services:
+
+  spark-runner:
+    image: spark:latest
+    container_name: spark-runner
+    depends_on:
+      - spark-master
+    working_dir: /opt/app
+    volumes:
+      - ./:/opt/app
+    entrypoint:
+      - /bin/bash
+      - -lc
+      - /opt/app/etl.sh; /opt/app/analysis.sh
+    environment:
+      RUN_ETL: "1"
+      RUN_ANALYSIS: "0"
+      RELEASE_DATE: "2025-11-21"
+
+  spark-master:
+    image: spark:latest
+    container_name: spark-master
+    ports:
+      - "7077:7077"   # Spark master RPC
+      - "8080:8080"   # Spark master Web UI
+      - "4040:4040"   # App Web UI (first app)
+    entrypoint: ["/opt/spark/bin/spark-class"]
+    command:
+      - org.apache.spark.deploy.master.Master
+      - --host
+      - 0.0.0.0
+      - --port
+      - "7077"
+      - --webui-port
+      - "8080"
+
+  spark-worker:
+    image: spark:latest
+    container_name: spark-worker
+    depends_on:
+      - spark-master
+    working_dir: /opt/app
+    volumes:
+      - ./:/opt/app
+    ports:
+      - "8081:8081"   # Worker Web UI
+    entrypoint: ["/opt/spark/bin/spark-class"]
+    command:
+      - org.apache.spark.deploy.worker.Worker
+      - spark://spark-master:7077
+      - --cores
+      - "4"
+      - --memory
+      - "4G"
+      - --webui-port
+      - "8081"
