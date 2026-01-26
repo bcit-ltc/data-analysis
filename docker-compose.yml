@@ -11,11 +11,9 @@ services:
     entrypoint:
       - /bin/bash
       - -lc
-      - /opt/app/etl.sh; /opt/app/analysis.sh
+      - /opt/app/etl.sh
     environment:
-      RUN_ETL: "1"
-      RUN_ANALYSIS: "0"
-      RELEASE_DATE: "2025-11-21"
+      RUN_ETL: "1" # run etl scripts
 
   spark-master:
     image: spark:latest

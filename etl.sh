@@ -8,9 +8,9 @@ fi
 
 echo "[ETL] $(date -Iseconds) ETL scripts running ..."
 
-RELEASE_DATE="$RELEASE_DATE" #
+# RELEASE_DATE="$RELEASE_DATE" #
 
-COMMON="/opt/spark/bin/spark-submit --master spark://spark-master:7077"
+# COMMON="/opt/spark/bin/spark-submit --master spark://spark-master:7077"
 
-$COMMON etl-scripts/calendar_etl.py "$RELEASE_DATE" data
+# $COMMON etl-scripts/calendar_etl.py "$RELEASE_DATE" data
 
