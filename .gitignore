@@ -1,2 +1,7 @@
-data/
+# Ignore everything in the data folder
+data/*
+# But do NOT ignore the README file inside data
+!data/README.md
+
+output/
 .DS_Store

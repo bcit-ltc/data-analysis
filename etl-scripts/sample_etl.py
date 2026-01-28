@@ -3,8 +3,53 @@ import sys
 assert sys.version_info >= (3, 5)  # make sure we have Python 3.5+
 
 from pyspark.sql import SparkSession, types
-from pyspark.sql import functions as f
-from schemas import CALENDAR_SCHEMA
+from pyspark.sql import functions as F
+
+from pyspark.sql import Window
+from pyspark.sql.types import (
+    StructType, StructField, IntegerType, StringType, BooleanType, TimestampType, LongType
+)
+
+# ---------- schemas ----------
+org_units_schema = StructType([
+    StructField("OrgUnitId", IntegerType(), False),
+    StructField("Organization", StringType(), True),
+    StructField("Type", StringType(), True),
+    StructField("Name", StringType(), True),
+    StructField("Code", StringType(), True),
+    StructField("StartDate", TimestampType(), True),
+    StructField("EndDate", TimestampType(), True),
+    StructField("IsActive", BooleanType(), True),
+    StructField("CreatedDate", TimestampType(), True),
+    StructField("IsDeleted", BooleanType(), True),
+    StructField("DeletedDate", TimestampType(), True),
+    StructField("RecycledDate", TimestampType(), True),
+    StructField("Version", LongType(), True),
+    StructField("OrgUnitTypeId", IntegerType(), True),
+])
+
+parents_schema = StructType([
+    StructField("OrgUnitId", IntegerType(), False),
+    StructField("ParentOrgUnitId", IntegerType(), False),
+    StructField("RowVersion", LongType(), True),
+    StructField("DateDeleted", TimestampType(), True),
+])
+
+ancestors_schema = StructType([
+    StructField("OrgUnitId", IntegerType(), False),
+    StructField("AncestorOrgUnitId", IntegerType(), False),
+])
+
+desc_schema = StructType([
+    StructField("OrgUnitId", IntegerType(), False),
+    StructField("DescendantOrgUnitId", IntegerType(), False),
+])
+
+recent_access_schema = StructType([
+    StructField("OrgUnitId", IntegerType(), False),
+    StructField("UserId", IntegerType(), False),  # do NOT publish raw
+    StructField("LastAccessedDate", TimestampType(), True),
+])
 
 
 def main(path_in: str, path_out: str):
