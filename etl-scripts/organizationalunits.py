@@ -102,12 +102,12 @@ def main(raw_base: str, out_base: str):
     spark.sparkContext.setLogLevel("WARN")
 
     org_units_raw = read_csv(f"{RAW_BASE}/OrganizationalUnits/OrganizationalUnits.csv", org_units_schema)
-    parents_raw   = read_csv(f"{RAW_BASE}/OrganizationalUnitParents/OrganizationalUnitParents.csv", parents_schema)
-    anc_raw       = read_csv(f"{RAW_BASE}/OrganizationalUnitAncestors/OrganizationalUnitAncestors.csv", ancestors_schema)
-    desc_raw      = read_csv(f"{RAW_BASE}/OrganizationalUnitDescendants/OrganizationalUnitDescendants.csv", desc_schema)
+    parents_raw   = read_csv(f"{RAW_BASE}/OrganizationalUnits/OrganizationalUnitParents.csv", parents_schema)
+    anc_raw       = read_csv(f"{RAW_BASE}/OrganizationalUnits/OrganizationalUnitAncestors.csv", ancestors_schema)
+    desc_raw      = read_csv(f"{RAW_BASE}/OrganizationalUnits/OrganizationalUnitDescendants.csv", desc_schema)
 
     # Optional (PII-ish): only use to create aggregates
-    recent_raw    = read_csv(f"{RAW_BASE}/OrganizationalUnitRecentAccess/OrganizationalUnitRecentAccess.csv", recent_access_schema)
+    recent_raw    = read_csv(f"{RAW_BASE}/OrganizationalUnits/OrganizationalUnitRecentAccess.csv", recent_access_schema)
 
     # Task 1) OrganizationalUnits “latest per OrgUnitId” (dedupe)
     w = Window.partitionBy("OrgUnitId").orderBy(
