@@ -348,7 +348,7 @@ def main(raw_base: str, out_base: str):
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
-        print("Usage: test.py <raw_base> <out_base>")
+        print("Usage: organizationalunits.py <raw_base> <out_base>")
         sys.exit(1)
 
     raw_base = sys.argv[1]
