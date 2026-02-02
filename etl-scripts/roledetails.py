@@ -80,9 +80,6 @@ def write_csv_publish(df, name: str, single_file: bool = False):
         .save(f"{OUT_BASE}/{name}")
     )
 
-# Choose once for your publishing needs:
-SINGLE_FILE_PER_TABLE = True
-
 def main(raw_base: str, out_base: str):
     global RAW_BASE, OUT_BASE, spark
 
@@ -98,7 +95,7 @@ def main(raw_base: str, out_base: str):
 
     role_details_raw = read_csv(f"{RAW_BASE}/RoleDetails/RoleDetails.csv", role_details_schema)
 
-    role_details_raw.show()
+    role_details_raw.printSchema()
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
