@@ -56,6 +56,9 @@ def norm_ws(col):
     # trim + collapse internal whitespace
     return F.trim(F.regexp_replace(col, r"\s+", " "))
 
+def nullify_blanks(col):
+    return F.when(F.trim(F.col(col)) == "", None).otherwise(F.col(col))
+
 def format_ts_for_csv(df, ts_cols):
     # publish timestamps as ISO-like strings (UTC-ish). adjust if you need strict ISO 8601 with 'Z'
     out = df
@@ -95,7 +98,80 @@ def main(raw_base: str, out_base: str):
 
     role_details_raw = read_csv(f"{RAW_BASE}/RoleDetails/RoleDetails.csv", role_details_schema)
 
-    role_details_raw.printSchema()
+    # role_details_raw.printSchema()
+
+    from pyspark.sql import functions as F
+
+    # Trim and normalize text fields
+    df = role_details_raw.withColumn("RoleName", norm_ws("RoleName")) \
+                     .withColumn("RoleAlias", norm_ws("RoleAlias")) \
+                     .withColumn("RoleCode", norm_ws("RoleCode")) \
+                     .withColumn("Description", norm_ws("Description")) \
+                     .withColumn("ClassListRoleName", norm_ws("ClassListRoleName"))
+
+    # Nullify blank text fields
+    df = df.withColumn("Description", nullify_blanks("Description"))
+
+    # deduplicate roles 
+    df = df.dropDuplicates(["OrgUnitId", "RoleId"])
+    
+    # add IsDeleted and IsActive columns
+    df = df.withColumn("IsDeleted", F.col("DeletedBy").isNotNull()) \
+           .withColumn("IsActive", F.col("DeletedBy").isNull())
+
+    roles_active = df.filter(F.col("IsActive"))
+
+    w = Window.partitionBy("OrgUnitId", "RoleId").orderBy(F.col("LastModifiedDate").desc_nulls_last())
+    latest = df.withColumn("rn", F.row_number().over(w)) \
+            .filter(F.col("rn") == 1) \
+            .drop("rn")
+
+    # Feature engineering / derived flags
+
+    df = df.withColumn(
+    "IsVisibleToLearners",
+    F.col("ShowInContent") |
+    F.col("ShowInGrades") |
+    F.col("ShowInDiscussionAssess") |
+    F.col("ShowInDiscussionStats") |
+    F.col("ShowInAttendance") |
+    F.col("ShowInUserProgress")
+    )
+
+    # Group roles into coarse categories by name/code
+
+    df = df.withColumn(
+    "RoleCategory",
+    F.when(F.lower("RoleName").like("%student%"), "Student")
+     .when(F.lower("RoleName").like("%instructor%"), "Instructor")
+     .when(F.lower("RoleName").like("%ta%"), "TA")
+     .when(F.lower("RoleName").like("%observer%"), "Observer")
+     .otherwise("Other")
+    )
+
+    # Combine course access flags
+
+    df = df.withColumn(
+    "CanAccessNonCurrentCourses",
+    F.col("AccessPastCourses") | F.col("AccessFutureCourses")
+    )
+
+    # Modeling for downstream analytics
+
+    summary = df.groupBy("OrgUnitId", "RoleCategory") \
+            .agg(F.countDistinct("RoleId").alias("RoleCount"))
+
+    # Quality checks
+
+    bad_rows = df.filter(F.col("RoleId").isNull() | F.col("RoleName").isNull())
+    if bad_rows.count() > 0:
+        print("Found bad rows:")
+        bad_rows.show()
+        sys.exit(1)
+
+
+
+    # df.printSchema()
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
