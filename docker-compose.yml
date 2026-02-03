@@ -2,6 +2,7 @@ services:
   spark-master:
     image: spark:latest
     container_name: spark-master
+    hostname: spark-master
     ports:
       - "7077:7077"
       - "8080:8080"
@@ -10,7 +11,7 @@ services:
     command:
       - org.apache.spark.deploy.master.Master
       - --host
-      - 0.0.0.0
+      - spark-master
       - --port
       - "7077"
       - --webui-port
@@ -26,7 +27,8 @@ services:
     image: spark:latest
     container_name: spark-worker
     depends_on:
-      - spark-master
+      spark-master:
+        condition: service_healthy
     working_dir: /opt/app
     volumes:
       - ./:/opt/app
