@@ -166,7 +166,12 @@ def main(raw_base: str, out_base: str):
     bad_rows = df.filter(F.col("RoleId").isNull() | F.col("RoleName").isNull())
     if bad_rows.count() > 0:
         print("Found bad rows:")
-        bad_rows.show()
+        bad_rows.select(
+        "OrgUnitId",  # or drop this if not needed
+        "RoleId",
+        "RoleName",
+        "RoleCode"
+        ).show(truncate=False)
         sys.exit(1)
 
 
