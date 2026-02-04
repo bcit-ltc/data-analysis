@@ -1,7 +1,11 @@
 # Ignore everything in the data folder
-data/*
+data/**/*.csv
 # But do NOT ignore the README file inside data
 !data/README.md
+!data/Readme.md
+!data/**/README.md
+!data/**/Readme.md
+!data/**/readme.md
 
 output/
 .DS_Store
