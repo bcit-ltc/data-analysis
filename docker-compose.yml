@@ -1,47 +1,39 @@
 services:
-
-  spark-runner:
-    image: spark:latest
-    container_name: spark-runner
-    depends_on:
-      - spark-master
-    working_dir: /opt/app
-    volumes:
-      - ./:/opt/app
-    entrypoint:
-      - /bin/bash
-      - -lc
-      - /opt/app/etl.sh
-    environment:
-      RUN_ETL: "1" # run etl scripts
-
   spark-master:
     image: spark:latest
     container_name: spark-master
+    hostname: spark-master
     ports:
-      - "7077:7077"   # Spark master RPC
-      - "8080:8080"   # Spark master Web UI
-      - "4040:4040"   # App Web UI (first app)
+      - "7077:7077"
+      - "8080:8080"
+      - "4040:4040"
     entrypoint: ["/opt/spark/bin/spark-class"]
     command:
       - org.apache.spark.deploy.master.Master
       - --host
-      - 0.0.0.0
+      - spark-master
       - --port
       - "7077"
       - --webui-port
       - "8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   spark-worker:
     image: spark:latest
     container_name: spark-worker
     depends_on:
-      - spark-master
+      spark-master:
+        condition: service_healthy
     working_dir: /opt/app
     volumes:
       - ./:/opt/app
     ports:
-      - "8081:8081"   # Worker Web UI
+      - "8081:8081"
     entrypoint: ["/opt/spark/bin/spark-class"]
     command:
       - org.apache.spark.deploy.worker.Worker
@@ -52,3 +44,27 @@ services:
       - "4G"
       - --webui-port
       - "8081"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://spark-master:8080 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  spark-runner:
+    image: spark:latest
+    container_name: spark-runner
+    depends_on:
+      spark-master:
+        condition: service_healthy
+      spark-worker:
+        condition: service_healthy
+    working_dir: /opt/app
+    volumes:
+      - ./:/opt/app
+    entrypoint:
+      - /bin/bash
+      - -lc
+      - /opt/app/etl.sh
+    environment:
+      RUN_ETL: "1"

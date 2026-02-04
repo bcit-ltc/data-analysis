@@ -1,0 +1,1 @@
+this folder is for keeping notebook scripts to explore the datasets and revise the spark scripts if needed
