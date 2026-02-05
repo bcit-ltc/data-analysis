@@ -18,6 +18,7 @@ from typing import Iterable, List, Optional, Sequence
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 from pyspark.sql.types import StringType, NumericType, DateType, TimestampType
+from common.structural_schema_profiling import standardize_column_names
 
 
 # Default set of string sentinel values that will be treated as "null-like"
@@ -266,3 +267,59 @@ def standardize_datetimes_iso(
         out = out.withColumn(c, F.date_format(F.col(c), output_format))
 
     return out
+
+
+def normalize_column_names(
+    df: DataFrame,
+    *,
+    case: str = "snake",
+    strip_whitespace: bool = True,
+) -> DataFrame:
+    """Return a new DataFrame with normalized column names.
+
+    This helper delegates the actual naming logic to
+    :func:`common.structural_schema_profiling.standardize_column_names` and
+    applies the resulting names to the given ``DataFrame``.
+
+    Parameters
+    ----------
+    df:
+        Input Spark ``DataFrame`` whose columns should be renamed.
+    case:
+        Naming style to target (e.g., ``"snake"``, ``"lower"``, ``"upper"``).
+    strip_whitespace:
+        Whether to trim leading/trailing whitespace in the original names
+        before normalisation.
+    """
+
+    original_cols = list(df.columns)
+    new_cols = standardize_column_names(
+        original_cols,
+        case=case,
+        strip_whitespace=strip_whitespace,
+    )
+
+    if len(new_cols) != len(original_cols):
+        raise RuntimeError(
+            "standardize_column_names returned a different number of names "
+            "than there are DataFrame columns"
+        )
+
+    # Guard against accidental name collisions, which make DataFrame
+    # operations ambiguous and hard to reason about.
+    seen = set()
+    duplicates = []
+    for name in new_cols:
+        if name in seen:
+            duplicates.append(name)
+        else:
+            seen.add(name)
+
+    if duplicates:
+        dup_list = ", ".join(sorted(set(duplicates)))
+        raise ValueError(
+            "Normalized column names are not unique; "
+            f"conflicting names: {dup_list}"
+        )
+
+    return df.toDF(*new_cols)

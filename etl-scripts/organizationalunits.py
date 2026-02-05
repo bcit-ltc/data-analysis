@@ -7,6 +7,7 @@ from pyspark.sql.types import (
 )
 from common.structural_schema_profiling import print_structural_profile
 from common.standardization_canonicalization import (
+    normalize_column_names,
     canonicalize_nulls,
     trim_whitespace,
     normalize_booleans,
@@ -83,17 +84,17 @@ def main(raw_base: str, out_base: str):
         top_values_k=10,
         output_base_dir=OUT_BASE,
     )
+    
 
+    df = normalize_column_names(org_units_raw)
     # Canonicalize only specific string columns; crash fast if mis-specified
-    df = canonicalize_nulls(df, columns=["Name", "Code"])
+    df = canonicalize_nulls(df, columns=["name", "code"])
     # Trim whitespace in all string columns
     df = trim_whitespace(df)
     # Normalize specific boolean-like columns to actual booleans
-    df = normalize_booleans(df, columns=["IsActive", "IsDeleted"])
-    # Normalize specific numeric-string columns
-    df = normalize_numeric_strings(df, columns=["Amount", "Balance"], output_type="double")
+    df = normalize_booleans(df, columns=["is_active", "is_deleted"])
     # Standardize specific timestamp columns
-    df = standardize_datetimes_iso(df, columns=["StartDate", "EndDate"])
+    df = standardize_datetimes_iso(df, columns=["start_date", "end_date"])
 
 
 if __name__ == '__main__':
