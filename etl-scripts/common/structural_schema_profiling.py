@@ -14,7 +14,7 @@ from typing import Iterable, List, Mapping, Optional
 
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
-from pyspark.sql.types import StringType
+from pyspark.sql.types import StringType, NumericType
 
 
 # Default set of string sentinel values that will be treated as "missing" when
@@ -285,6 +285,73 @@ def profile_top_values(
     )
 
 
+def profile_numeric_distribution(
+    df: DataFrame,
+    *,
+    max_columns: Optional[int] = None,
+) -> DataFrame:
+    total_rows = df.count()
+
+    if total_rows == 0 or not df.columns:
+        return df.sparkSession.createDataFrame(
+            [],
+            schema="column string, count long, mean double, stddev double, min double, max double",
+        )
+
+    schema_by_name = {field.name: field.dataType for field in df.schema}
+    numeric_cols = [
+        name for name, dtype in schema_by_name.items() if isinstance(dtype, NumericType)
+    ]
+
+    if max_columns is not None:
+        numeric_cols = numeric_cols[: max_columns]
+
+    if not numeric_cols:
+        return df.sparkSession.createDataFrame(
+            [],
+            schema="column string, count long, mean double, stddev double, min double, max double",
+        )
+
+    summary = (
+        df.select([F.col(c).cast("double").alias(c) for c in numeric_cols])
+        .summary("count", "mean", "stddev", "min", "max")
+        .collect()
+    )
+
+    stats_by_col = {c: {} for c in numeric_cols}
+    for row in summary:
+        stat_name = row["summary"]
+        for c in numeric_cols:
+            stats_by_col[c][stat_name] = row[c]
+
+    def _to_float(value):
+        if value is None:
+            return None
+        try:
+            v = float(value)
+        except Exception:
+            return None
+        if v != v:
+            return None
+        return v
+
+    summary_rows = []
+    for c in numeric_cols:
+        stats = stats_by_col.get(c, {})
+        count_str = stats.get("count")
+        count_val = int(_to_float(count_str)) if count_str is not None else 0
+        mean_val = _to_float(stats.get("mean"))
+        stddev_val = _to_float(stats.get("stddev"))
+        min_val = _to_float(stats.get("min"))
+        max_val = _to_float(stats.get("max"))
+        summary_rows.append((c, count_val, mean_val, stddev_val, min_val, max_val))
+
+    return df.sparkSession.createDataFrame(
+        summary_rows,
+        schema="column string, count long, mean double, stddev double, min double, max double",
+    )
+
+
 def print_structural_profile(
     df: DataFrame,
     dataset_name: str,
@@ -307,6 +374,18 @@ def print_structural_profile(
     missingness = profile_missingness(df, max_columns=max_missingness_columns)
     print(f"{dataset_name} missingness profile:")
     missingness.show(truncate=False)
+
+    cardinality = profile_cardinality(df)
+    print(f"{dataset_name} cardinality profile:")
+    cardinality.show(truncate=False)
+
+    top_values = profile_top_values(df)
+    print(f"{dataset_name} top values (k=5):")
+    top_values.show(truncate=False)
+
+    numeric_profile = profile_numeric_distribution(df)
+    print(f"{dataset_name} numeric distribution profile:")
+    numeric_profile.show(truncate=False)
 
     suggested_cols = standardize_column_names(df.columns)
     print(f"{dataset_name} suggested standardized column names:")
