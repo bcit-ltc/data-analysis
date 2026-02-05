@@ -81,7 +81,7 @@ def main(raw_base: str, out_base: str):
     # --- structural + schema profiling (step 1) ---
     print_structural_profile(
         org_units_raw,
-        dataset_name="OrganizationalUnits",
+        dataset_name="organizationalunits",
         output_base_dir=OUT_BASE,
     )
 
