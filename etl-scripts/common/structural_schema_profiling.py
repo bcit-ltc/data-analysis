@@ -156,6 +156,135 @@ def profile_missingness(
     )
 
 
+def profile_cardinality(
+    df: DataFrame,
+    *,
+    max_columns: Optional[int] = None,
+    use_approx: bool = True,
+) -> DataFrame:
+    """Compute per-column cardinality (distinct value counts).
+
+    Returns a small Spark ``DataFrame`` with schema::
+
+        column string, n_distinct long, pct_distinct double
+
+    ``n_distinct`` is the number of distinct *non-null* values in the column.
+    ``pct_distinct`` is ``n_distinct / n_rows``.
+    """
+
+    total_rows = df.count()
+
+    if total_rows == 0 or not df.columns:
+        return df.sparkSession.createDataFrame([], schema="column string, n_distinct long, pct_distinct double")
+
+    cols = list(df.columns)
+    if max_columns is not None:
+        cols = cols[: max_columns]
+
+    if use_approx:
+        agg_exprs = [
+            F.approx_count_distinct(F.col(c)).alias(c)
+            for c in cols
+        ]
+    else:
+        agg_exprs = [
+            F.countDistinct(F.col(c)).alias(c)
+            for c in cols
+        ]
+
+    cardinality_row = df.agg(*agg_exprs).collect()[0].asDict()
+
+    summary_rows = []
+    for c in cols:
+        n_distinct = int(cardinality_row.get(c, 0) or 0)
+        pct_distinct = (n_distinct / total_rows) if total_rows > 0 else None
+        summary_rows.append(
+            (c, n_distinct, float(pct_distinct) if pct_distinct is not None else None)
+        )
+
+    return df.sparkSession.createDataFrame(
+        summary_rows,
+        schema="column string, n_distinct long, pct_distinct double",
+    )
+
+
+def profile_top_values(
+    df: DataFrame,
+    *,
+    k: int = 5,
+    max_columns: Optional[int] = None,
+) -> DataFrame:
+    """Return the most common values per column.
+
+    This function is intended for exploratory, informational use. For each
+    column it returns up to ``k`` of the most frequent *non-missing* values,
+    where "missing" follows the same rules as :func:`profile_missingness`.
+
+    The result is a small Spark ``DataFrame`` with schema::
+
+        column string, value string, count long, pct double
+
+    where ``pct`` is ``count / n_rows``.
+    """
+
+    if k <= 0:
+        raise ValueError("k must be positive")
+
+    total_rows = df.count()
+
+    if total_rows == 0 or not df.columns:
+        return df.sparkSession.createDataFrame([], schema="column string, value string, count long, pct double")
+
+    cols = list(df.columns)
+    if max_columns is not None:
+        cols = cols[: max_columns]
+
+    schema_by_name = {field.name: field.dataType for field in df.schema}
+
+    summary_rows = []
+
+    for c in cols:
+        col_expr = F.col(c)
+        data_type = schema_by_name.get(c)
+
+        # Reuse the same missing-value semantics as ``profile_missingness``.
+        cond_missing = col_expr.isNull()
+        if isinstance(data_type, StringType):
+            lowered_trimmed = F.lower(F.trim(col_expr))
+            cond_missing = (
+                cond_missing
+                | (lowered_trimmed == "")
+                | lowered_trimmed.isin(*_DEFAULT_MISSING_SENTINELS)
+            )
+
+        non_missing_df = df.where(~cond_missing)
+
+        if non_missing_df.rdd.isEmpty():  # no non-missing values for this column
+            continue
+
+        top_k = (
+            non_missing_df
+            .groupBy(col_expr)
+            .agg(F.count(F.lit(1)).alias("count"))
+            .orderBy(F.desc("count"))
+            .limit(k)
+            .collect()
+        )
+
+        for row in top_k:
+            value = row[c]
+            cnt = int(row["count"])
+            pct = (cnt / total_rows) if total_rows > 0 else None
+            summary_rows.append(
+                (c, None if value is None else str(value), cnt, float(pct) if pct is not None else None)
+            )
+
+    return df.sparkSession.createDataFrame(
+        summary_rows,
+        schema="column string, value string, count long, pct double",
+    )
+
+
 def print_structural_profile(
     df: DataFrame,
     dataset_name: str,
