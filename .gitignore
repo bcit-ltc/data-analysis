@@ -9,3 +9,7 @@ data/**/*.csv
 
 output/
 .DS_Store
+
+# Python bytecode caches
+__pycache__/
+*.py[cod]
