@@ -14,6 +14,7 @@ from common.standardization_canonicalization import (
     normalize_numeric_strings,
     standardize_datetimes_iso,
 )
+from common.quality_validation import print_quality_report
 
 
 DATASET_NAME = "organizationalunits"
@@ -92,17 +93,15 @@ def main(raw_base: str, out_base: str):
     df = trim_whitespace(df)
     # Standardize specific timestamp columns
     df = standardize_datetimes_iso(df, columns=["start_date", "end_date"])
-    
-
-    
 
     # --- quality validation + scorecard (step 3) ---
-
-
-
-
-
-
+    print_quality_report(
+        df,
+        dataset_name=DATASET_NAME,
+        key_columns=["org_unit_id"],
+        numeric_columns=["org_unit_id", "version", "org_unit_type_id"],
+        output_base_dir=OUT_BASE,
+    )
 
     # --- publish cleaned dataset ---
     write_csv_publish(df, DATASET_NAME)
