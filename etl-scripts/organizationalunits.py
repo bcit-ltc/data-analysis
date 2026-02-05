@@ -46,21 +46,19 @@ def read_csv(path: str, schema: StructType):
         .load(path)
     )
 
-# def write_csv_publish(df, name: str, single_file: bool = False):
-#     out = df
-#     if single_file:
-#         out = out.coalesce(1)
+def write_csv_publish(df, name: str, single_file: bool = False):
+    out = df.coalesce(1) if single_file else df
 
-#     (out.write
-#         .mode("overwrite")
-#         .format("csv")
-#         .option("header", "true")
-#         .option("quoteAll", "true")
-#         .option("escape", "\"")
-#         .option("emptyValue", "")
-#         .option("nullValue", "")
-#         .save(f"{OUT_BASE}/{name}")
-#     )
+    (out.write
+        .mode("overwrite")
+        .format("csv")
+        .option("header", "true")
+        .option("quoteAll", "true")
+        .option("escape", "\"")
+        .option("emptyValue", "")
+        .option("nullValue", "")
+        .save(f"{OUT_BASE}/{name}")
+    )
 
 def main(raw_base: str, out_base: str):
     global RAW_BASE, OUT_BASE, spark
@@ -86,16 +84,28 @@ def main(raw_base: str, out_base: str):
     )
     
 
+    # --- standardization + canonicalization (step 2) ---
     df = normalize_column_names(org_units_raw)
     # Canonicalize only specific string columns; crash fast if mis-specified
     df = canonicalize_nulls(df, columns=["name", "code"])
     # Trim whitespace in all string columns
     df = trim_whitespace(df)
-    # Normalize specific boolean-like columns to actual booleans
-    df = normalize_booleans(df, columns=["is_active", "is_deleted"])
     # Standardize specific timestamp columns
     df = standardize_datetimes_iso(df, columns=["start_date", "end_date"])
+    
 
+    
+
+    # --- quality validation + scorecard (step 3) ---
+
+
+
+
+
+
+
+    # --- publish cleaned dataset ---
+    write_csv_publish(df, DATASET_NAME)
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
