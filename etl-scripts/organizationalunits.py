@@ -58,7 +58,7 @@ def write_csv_publish(df, name: str, single_file: bool = False):
         .option("escape", "\"")
         .option("emptyValue", "")
         .option("nullValue", "")
-        .save(f"{OUT_BASE}/{name}")
+        .save(f"{OUT_BASE}/{name}/data")
     )
 
 def main(raw_base: str, out_base: str):

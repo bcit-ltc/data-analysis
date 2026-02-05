@@ -446,7 +446,7 @@ def print_structural_profile(
         dataset_id = re.sub(r"[^0-9a-zA-Z_]+", "_", dataset_name.strip()).lower()
         if not dataset_id:
             dataset_id = "dataset"
-        report_dir = os.path.join(output_base_dir, dataset_id)
+        report_dir = os.path.join(output_base_dir, dataset_id, "reports")
         os.makedirs(report_dir, exist_ok=True)
         report_path = os.path.join(report_dir, "preprocessing-assessment-report.txt")
         report_text = "\n\n".join(report_sections) + "\n"
