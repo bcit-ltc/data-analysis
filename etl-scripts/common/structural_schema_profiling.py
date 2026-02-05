@@ -9,6 +9,7 @@ These helpers are designed to work with PySpark ``DataFrame`` objects so they
 can be called from any Spark-based ETL script in this project.
 """
 
+import os
 import re
 from typing import Iterable, List, Mapping, Optional
 
@@ -29,6 +30,31 @@ _DEFAULT_MISSING_SENTINELS = (
     "unspecified",
     "missing",
 )
+
+
+def _format_spark_table(df: DataFrame) -> str:
+    cols = df.columns
+    if not cols:
+        return "(no columns)"
+
+    rows = [row.asDict(recursive=True) for row in df.collect()]
+    if not rows:
+        return " | ".join(cols)
+
+    col_widths = []
+    for c in cols:
+        max_len = max(len(str(r.get(c, ""))) for r in rows)
+        col_widths.append(max(len(c), max_len))
+
+    header = " | ".join(c.ljust(w) for c, w in zip(cols, col_widths))
+    sep = "-+-".join("-" * w for w in col_widths)
+    lines = [header, sep]
+
+    for r in rows:
+        line = " | ".join(str(r.get(c, "")).ljust(w) for c, w in zip(cols, col_widths))
+        lines.append(line)
+
+    return "\n".join(lines)
 
 
 def standardize_column_names(
@@ -357,6 +383,7 @@ def print_structural_profile(
     dataset_name: str,
     *,
     max_missingness_columns: Optional[int] = None,
+    output_base_dir: Optional[str] = None,
 ) -> None:
     """Print a basic structural + missingness profile for a dataset.
 
@@ -368,27 +395,59 @@ def print_structural_profile(
     - suggested standardized (snake_case) column names
     """
 
+    report_sections: List[str] = []
+
     shape_info = profile_shape(df)
-    print(f"{dataset_name} structural profile:", shape_info)
+    structural_block = f"{dataset_name} structural profile: {shape_info}"
+    print(structural_block)
+    report_sections.append(structural_block)
 
     missingness = profile_missingness(df, max_columns=max_missingness_columns)
-    print(f"{dataset_name} missingness profile:")
-    missingness.show(truncate=False)
+    missingness_header = f"{dataset_name} missingness profile:"
+    missingness_table = _format_spark_table(missingness)
+    print(missingness_header)
+    print(missingness_table)
+    report_sections.append(missingness_header + "\n" + missingness_table)
 
     cardinality = profile_cardinality(df)
-    print(f"{dataset_name} cardinality profile:")
-    cardinality.show(truncate=False)
+    cardinality_header = f"{dataset_name} cardinality profile:"
+    cardinality_table = _format_spark_table(cardinality)
+    print(cardinality_header)
+    print(cardinality_table)
+    report_sections.append(cardinality_header + "\n" + cardinality_table)
 
     top_values = profile_top_values(df)
-    print(f"{dataset_name} top values (k=5):")
-    top_values.show(truncate=False)
+    top_values_header = f"{dataset_name} top values (k=5):"
+    top_values_table = _format_spark_table(top_values)
+    print(top_values_header)
+    print(top_values_table)
+    report_sections.append(top_values_header + "\n" + top_values_table)
 
     numeric_profile = profile_numeric_distribution(df)
-    print(f"{dataset_name} numeric distribution profile:")
-    numeric_profile.show(truncate=False)
+    numeric_header = f"{dataset_name} numeric distribution profile:"
+    numeric_table = _format_spark_table(numeric_profile)
+    print(numeric_header)
+    print(numeric_table)
+    report_sections.append(numeric_header + "\n" + numeric_table)
 
     suggested_cols = standardize_column_names(df.columns)
-    print(f"{dataset_name} suggested standardized column names:")
+    suggestions_header = f"{dataset_name} suggested standardized column names:"
+    print(suggestions_header)
+    suggestion_lines = [suggestions_header]
     for original, cleaned in zip(df.columns, suggested_cols):
         if original != cleaned:
-            print(f"  {original} -> {cleaned}")
+            line = f"  {original} -> {cleaned}"
+            print(line)
+            suggestion_lines.append(line)
+    report_sections.append("\n" + "\n".join(suggestion_lines))
+
+    if output_base_dir is not None:
+        dataset_id = re.sub(r"[^0-9a-zA-Z_]+", "_", dataset_name.strip()).lower()
+        if not dataset_id:
+            dataset_id = "dataset"
+        report_dir = os.path.join(output_base_dir, dataset_id)
+        os.makedirs(report_dir, exist_ok=True)
+        report_path = os.path.join(report_dir, "preprocessing-assessment-report.txt")
+        report_text = "\n\n".join(report_sections) + "\n"
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write(report_text)

@@ -79,7 +79,11 @@ def main(raw_base: str, out_base: str):
     org_units_raw = read_csv(f"{RAW_BASE}/OrganizationalUnits/OrganizationalUnits.csv", org_units_schema)
 
     # --- structural + schema profiling (step 1) ---
-    print_structural_profile(org_units_raw, dataset_name="OrganizationalUnits")
+    print_structural_profile(
+        org_units_raw,
+        dataset_name="OrganizationalUnits",
+        output_base_dir=OUT_BASE,
+    )
 
 
 if __name__ == '__main__':
