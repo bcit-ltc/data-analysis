@@ -7,6 +7,8 @@ from pyspark.sql.types import (
 )
 from common.structural_schema_profiling import print_structural_profile
 
+DATASET_NAME = "organizationalunits"
+
 # ---------- schemas ----------
 org_units_schema = StructType([
     StructField("OrgUnitId", IntegerType(), False),
@@ -81,7 +83,7 @@ def main(raw_base: str, out_base: str):
     # --- structural + schema profiling (step 1) ---
     print_structural_profile(
         org_units_raw,
-        dataset_name="organizationalunits",
+        dataset_name=DATASET_NAME,
         output_base_dir=OUT_BASE,
     )
 

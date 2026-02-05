@@ -383,6 +383,7 @@ def print_structural_profile(
     dataset_name: str,
     *,
     max_missingness_columns: Optional[int] = None,
+    top_values_k: int = 5,
     output_base_dir: Optional[str] = None,
 ) -> None:
     """Print a basic structural + missingness profile for a dataset.
@@ -416,8 +417,8 @@ def print_structural_profile(
     print(cardinality_table)
     report_sections.append(cardinality_header + "\n" + cardinality_table)
 
-    top_values = profile_top_values(df)
-    top_values_header = f"{dataset_name} top values (k=5):"
+    top_values = profile_top_values(df, k=top_values_k)
+    top_values_header = f"{dataset_name} top values (k={top_values_k}):"
     top_values_table = _format_spark_table(top_values)
     print(top_values_header)
     print(top_values_table)
