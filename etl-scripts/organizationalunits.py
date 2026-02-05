@@ -6,6 +6,14 @@ from pyspark.sql.types import (
     StructType, StructField, IntegerType, StringType, BooleanType, TimestampType, LongType
 )
 from common.structural_schema_profiling import print_structural_profile
+from common.standardization_canonicalization import (
+    canonicalize_nulls,
+    trim_whitespace,
+    normalize_booleans,
+    normalize_numeric_strings,
+    standardize_datetimes_iso,
+)
+
 
 DATASET_NAME = "organizationalunits"
 
@@ -37,33 +45,21 @@ def read_csv(path: str, schema: StructType):
         .load(path)
     )
 
-def norm_ws(col):
-    # trim + collapse internal whitespace
-    return F.trim(F.regexp_replace(col, r"\s+", " "))
+# def write_csv_publish(df, name: str, single_file: bool = False):
+#     out = df
+#     if single_file:
+#         out = out.coalesce(1)
 
-def format_ts_for_csv(df, ts_cols):
-    # publish timestamps as ISO-like strings (UTC-ish). adjust if you need strict ISO 8601 with 'Z'
-    out = df
-    for c in ts_cols:
-        if c in out.columns:
-            out = out.withColumn(c, F.date_format(F.col(c), "yyyy-MM-dd'T'HH:mm:ss"))
-    return out
-
-def write_csv_publish(df, name: str, single_file: bool = False):
-    out = df
-    if single_file:
-        out = out.coalesce(1)
-
-    (out.write
-        .mode("overwrite")
-        .format("csv")
-        .option("header", "true")
-        .option("quoteAll", "true")
-        .option("escape", "\"")
-        .option("emptyValue", "")
-        .option("nullValue", "")
-        .save(f"{OUT_BASE}/{name}")
-    )
+#     (out.write
+#         .mode("overwrite")
+#         .format("csv")
+#         .option("header", "true")
+#         .option("quoteAll", "true")
+#         .option("escape", "\"")
+#         .option("emptyValue", "")
+#         .option("nullValue", "")
+#         .save(f"{OUT_BASE}/{name}")
+#     )
 
 def main(raw_base: str, out_base: str):
     global RAW_BASE, OUT_BASE, spark
@@ -87,6 +83,17 @@ def main(raw_base: str, out_base: str):
         top_values_k=10,
         output_base_dir=OUT_BASE,
     )
+
+    # Canonicalize only specific string columns; crash fast if mis-specified
+    df = canonicalize_nulls(df, columns=["Name", "Code"])
+    # Trim whitespace in all string columns
+    df = trim_whitespace(df)
+    # Normalize specific boolean-like columns to actual booleans
+    df = normalize_booleans(df, columns=["IsActive", "IsDeleted"])
+    # Normalize specific numeric-string columns
+    df = normalize_numeric_strings(df, columns=["Amount", "Balance"], output_type="double")
+    # Standardize specific timestamp columns
+    df = standardize_datetimes_iso(df, columns=["StartDate", "EndDate"])
 
 
 if __name__ == '__main__':

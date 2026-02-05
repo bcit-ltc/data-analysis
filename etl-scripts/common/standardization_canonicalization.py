@@ -43,7 +43,19 @@ def _string_columns(df: DataFrame, columns: Optional[Iterable[str]] = None) -> L
             if isinstance(dtype, StringType)
         ]
 
-    return [c for c in columns if c in schema_by_name and isinstance(schema_by_name[c], StringType)]
+    requested = list(columns)
+    missing = [c for c in requested if c not in schema_by_name]
+    if missing:
+        raise ValueError(f"Columns not found in DataFrame: {', '.join(sorted(missing))}")
+
+    non_string = [
+        c for c in requested
+        if not isinstance(schema_by_name.get(c), StringType)
+    ]
+    if non_string:
+        raise TypeError(f"Columns are not string-typed: {', '.join(sorted(non_string))}")
+
+    return requested
 
 
 def canonicalize_nulls(
@@ -229,10 +241,22 @@ def standardize_datetimes_iso(
             if isinstance(dtype, (DateType, TimestampType))
         ]
     else:
-        target_cols = [
-            c for c in columns
-            if c in schema_by_name and isinstance(schema_by_name[c], (DateType, TimestampType))
+        requested = list(columns)
+        missing = [c for c in requested if c not in schema_by_name]
+        if missing:
+            raise ValueError(f"Columns not found in DataFrame: {', '.join(sorted(missing))}")
+
+        non_temporal = [
+            c for c in requested
+            if not isinstance(schema_by_name.get(c), (DateType, TimestampType))
         ]
+        if non_temporal:
+            raise TypeError(
+                "Columns are not DateType/TimestampType: "
+                + ", ".join(sorted(non_temporal))
+            )
+
+        target_cols = requested
 
     if not target_cols:
         return df
