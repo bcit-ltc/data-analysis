@@ -5,6 +5,11 @@ from pyspark.sql import Window
 from pyspark.sql.types import (
     StructType, StructField, IntegerType, StringType, BooleanType, TimestampType, LongType
 )
+from common.structural_schema_profiling import (
+    standardize_column_names,
+    profile_shape,
+    profile_missingness,
+)
 
 # ---------- schemas ----------
 org_units_schema = StructType([
@@ -76,7 +81,21 @@ def main(raw_base: str, out_base: str):
     spark.sparkContext.setLogLevel("WARN")
 
     org_units_raw = read_csv(f"{RAW_BASE}/OrganizationalUnits/OrganizationalUnits.csv", org_units_schema)
-    org_units_raw.show(5)
+    # org_units_raw.show(5)
+
+    # --- structural + schema profiling (step 1) ---
+    shape_info = profile_shape(org_units_raw)
+    print("Org Units structural profile:", shape_info)
+
+    missingness = profile_missingness(org_units_raw)
+    print("Org Units missingness profile:")
+    missingness.show(truncate=False)
+
+    suggested_cols = standardize_column_names(org_units_raw.columns)
+    print("Suggested standardized column names:")
+    for original, cleaned in zip(org_units_raw.columns, suggested_cols):
+        if original != cleaned:
+            print(f"  {original} -> {cleaned}")
 
 
 if __name__ == '__main__':
