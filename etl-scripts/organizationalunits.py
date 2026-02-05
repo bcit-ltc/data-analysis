@@ -84,6 +84,7 @@ def main(raw_base: str, out_base: str):
     print_structural_profile(
         org_units_raw,
         dataset_name=DATASET_NAME,
+        top_values_k=10,
         output_base_dir=OUT_BASE,
     )
 
