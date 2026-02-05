@@ -154,3 +154,33 @@ def profile_missingness(
         summary_rows,
         schema="column string, n_missing long, pct_missing double",
     )
+
+
+def print_structural_profile(
+    df: DataFrame,
+    dataset_name: str,
+    *,
+    max_missingness_columns: Optional[int] = None,
+) -> None:
+    """Print a basic structural + missingness profile for a dataset.
+
+    This is a convenience wrapper intended to be called from ETL scripts so
+    that a single function call provides:
+
+    - row/column counts
+    - per-column missingness summary
+    - suggested standardized (snake_case) column names
+    """
+
+    shape_info = profile_shape(df)
+    print(f"{dataset_name} structural profile:", shape_info)
+
+    missingness = profile_missingness(df, max_columns=max_missingness_columns)
+    print(f"{dataset_name} missingness profile:")
+    missingness.show(truncate=False)
+
+    suggested_cols = standardize_column_names(df.columns)
+    print(f"{dataset_name} suggested standardized column names:")
+    for original, cleaned in zip(df.columns, suggested_cols):
+        if original != cleaned:
+            print(f"  {original} -> {cleaned}")
