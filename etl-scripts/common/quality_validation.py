@@ -259,9 +259,13 @@ def print_quality_report(
 
     sections: List[str] = []
 
+    label = dataset_name
+    if table_name is not None:
+        label = f"{dataset_name}.{table_name}"
+
     # Missingness profile
     missingness = profile_missingness(df)
-    miss_header = f"{dataset_name} missingness profile:"
+    miss_header = f"{label} missingness profile:"
     miss_table = _format_spark_table(missingness)
     print(miss_header)
     print(miss_table)
@@ -270,7 +274,7 @@ def print_quality_report(
     # Parse success profile (approximate, based on non-null ratios).
     parse_success = _parse_success_table(df, missingness, parsed_columns=parsed_columns)
     if parse_success.count() > 0:
-        parse_header = f"{dataset_name} parse success profile (approximate):"
+        parse_header = f"{label} parse success profile (approximate):"
         parse_table = _format_spark_table(parse_success)
         print(parse_header)
         print(parse_table)
@@ -279,7 +283,7 @@ def print_quality_report(
     # Duplicate-key statistics, if key columns are supplied.
     if key_columns is not None:
         dup_table = _duplicate_stats_table(df, key_columns)
-        dup_header = f"{dataset_name} duplicate-key summary (keys={list(key_columns)}):"
+        dup_header = f"{label} duplicate-key summary (keys={list(key_columns)}):"
         dup_table_str = _format_spark_table(dup_table)
         print(dup_header)
         print(dup_table_str)
@@ -288,7 +292,7 @@ def print_quality_report(
     # Numeric outlier summary.
     outliers = _numeric_outlier_table(df, numeric_columns=numeric_columns)
     if outliers.count() > 0:
-        out_header = f"{dataset_name} numeric outlier summary:"
+        out_header = f"{label} numeric outlier summary:"
         out_table = _format_spark_table(outliers)
         print(out_header)
         print(out_table)

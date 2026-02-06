@@ -399,41 +399,45 @@ def print_structural_profile(
 
     report_sections: List[str] = []
 
+    label = dataset_name
+    if table_name is not None:
+        label = f"{dataset_name}.{table_name}"
+
     shape_info = profile_shape(df)
-    structural_block = f"{dataset_name} structural profile: {shape_info}"
+    structural_block = f"{label} structural profile: {shape_info}"
     print(structural_block)
     report_sections.append(structural_block)
 
     missingness = profile_missingness(df, max_columns=max_missingness_columns)
-    missingness_header = f"{dataset_name} missingness profile:"
+    missingness_header = f"{label} missingness profile:"
     missingness_table = _format_spark_table(missingness)
     print(missingness_header)
     print(missingness_table)
     report_sections.append(missingness_header + "\n" + missingness_table)
 
     cardinality = profile_cardinality(df)
-    cardinality_header = f"{dataset_name} cardinality profile:"
+    cardinality_header = f"{label} cardinality profile:"
     cardinality_table = _format_spark_table(cardinality)
     print(cardinality_header)
     print(cardinality_table)
     report_sections.append(cardinality_header + "\n" + cardinality_table)
 
     top_values = profile_top_values(df, k=top_values_k)
-    top_values_header = f"{dataset_name} top values (k={top_values_k}):"
+    top_values_header = f"{label} top values (k={top_values_k}):"
     top_values_table = _format_spark_table(top_values)
     print(top_values_header)
     print(top_values_table)
     report_sections.append(top_values_header + "\n" + top_values_table)
 
     numeric_profile = profile_numeric_distribution(df)
-    numeric_header = f"{dataset_name} numeric distribution profile:"
+    numeric_header = f"{label} numeric distribution profile:"
     numeric_table = _format_spark_table(numeric_profile)
     print(numeric_header)
     print(numeric_table)
     report_sections.append(numeric_header + "\n" + numeric_table)
 
     suggested_cols = standardize_column_names(df.columns)
-    suggestions_header = f"{dataset_name} suggested standardized column names:"
+    suggestions_header = f"{label} suggested standardized column names:"
     print(suggestions_header)
     suggestion_lines = [suggestions_header]
     for original, cleaned in zip(df.columns, suggested_cols):
