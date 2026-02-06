@@ -18,6 +18,7 @@ from common.quality_validation import print_quality_report
 
 
 DATASET_NAME = "organizationalunits"
+DATASET_TABLE = "organizationalunits"
 
 # ---------- schemas ----------
 org_units_schema = StructType([
@@ -47,7 +48,7 @@ def read_csv(path: str, schema: StructType):
         .load(path)
     )
 
-def write_csv_publish(df, name: str, single_file: bool = False):
+def write_csv_publish(df, dataset_name: str, table_name: str, single_file: bool = False):
     out = df.coalesce(1) if single_file else df
 
     (out.write
@@ -58,7 +59,7 @@ def write_csv_publish(df, name: str, single_file: bool = False):
         .option("escape", "\"")
         .option("emptyValue", "")
         .option("nullValue", "")
-        .save(f"{OUT_BASE}/{name}/data")
+        .save(f"{OUT_BASE}/{dataset_name}/{table_name}/data")
     )
 
 def main(raw_base: str, out_base: str):
@@ -81,6 +82,7 @@ def main(raw_base: str, out_base: str):
     print_structural_profile(
         org_units_raw,
         dataset_name=DATASET_NAME,
+        table_name=DATASET_TABLE,
         top_values_k=10,
         output_base_dir=OUT_BASE,
     )
@@ -102,6 +104,7 @@ def main(raw_base: str, out_base: str):
         dataset_name=DATASET_NAME,
         key_columns=["org_unit_id"],
         numeric_columns=["org_unit_id", "version", "org_unit_type_id"],
+        table_name=DATASET_TABLE,
         output_base_dir=OUT_BASE,
     )
 
@@ -113,7 +116,7 @@ def main(raw_base: str, out_base: str):
 
 
     # --- publish cleaned dataset ---
-    write_csv_publish(df, DATASET_NAME)
+    write_csv_publish(df, DATASET_NAME, DATASET_TABLE)
 
 
 
