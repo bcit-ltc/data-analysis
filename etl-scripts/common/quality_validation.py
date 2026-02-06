@@ -241,6 +241,7 @@ def print_quality_report(
     numeric_columns: Optional[Sequence[str]] = None,
     output_base_dir: Optional[str] = None,
     report_filename: str = "quality-report.txt",
+    table_name: Optional[str] = None,
 ) -> None:
     """Print and optionally persist a small quality report for a dataset.
 
@@ -295,7 +296,10 @@ def print_quality_report(
 
     # Persist report to disk if requested.
     if output_base_dir is not None and sections:
-        report_dir = os.path.join(output_base_dir, dataset_name, "reports")
+        if table_name is not None:
+            report_dir = os.path.join(output_base_dir, dataset_name, table_name, "reports")
+        else:
+            report_dir = os.path.join(output_base_dir, dataset_name, "reports")
         os.makedirs(report_dir, exist_ok=True)
         report_path = os.path.join(report_dir, report_filename)
         report_text = "\n\n".join(sections) + "\n"
