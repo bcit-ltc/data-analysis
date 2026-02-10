@@ -101,23 +101,38 @@ def main(raw_base: str, out_base: str):
     # --- dataset-specific standardization, validation, and publishing below ---
 
     # --- standardization + canonicalization (step 2) ---
-    # df = normalize_column_names(org_units_raw)
+    df = normalize_column_names(content_objects_raw)
     # Canonicalize only specific string columns; crash fast if mis-specified
-    # df = canonicalize_nulls(df, columns=["name", "code"])
+    df = canonicalize_nulls(df, columns=[
+        "title",
+        "content_object_type",
+        "completion_type",
+        "location",
+    ])
     # Trim whitespace in all string columns
-    # df = trim_whitespace(df)
+    df = trim_whitespace(df)
     # Standardize specific timestamp columns
-    # df = standardize_datetimes_iso(df, columns=["start_date", "end_date"])
+    df = standardize_datetimes_iso(df, columns=[
+        "start_date",
+        "end_date",
+        "due_date",
+        "last_modified",
+        "deleted_date",
+    ])
 
     # --- quality validation + scorecard (step 3) ---
-    # print_quality_report(
-    #     df,
-    #     dataset_name=DATASET_NAME,
-    #     key_columns=["org_unit_id"],
-    #     numeric_columns=["org_unit_id", "version", "org_unit_type_id"],
-    #     table_name=DATASET_TABLE,
-    #     output_base_dir=OUT_BASE,
-    # )
+    print_quality_report(
+        df,
+        dataset_name=DATASET_NAME,
+        key_columns=["content_object_id"],
+        numeric_columns=[
+            "sort_order",
+            "depth",
+            "ai_utilization",
+        ],
+        table_name=DATASET_TABLE,
+        output_base_dir=OUT_BASE,
+    )
 
 
 
