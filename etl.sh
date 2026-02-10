@@ -13,6 +13,7 @@ echo "[ETL] $(date -Iseconds) ETL scripts running ..."
 COMMON="/opt/spark/bin/spark-submit --master spark://spark-master:7077"
 
 # $COMMON etl-scripts/audiovideoprocessed.py data output
+#$COMMON etl-scripts/contentobjects.py data output
 # $COMMON etl-scripts/contentservice.py data output
 $COMMON etl-scripts/discussionsforum.py data output
 # $COMMON etl-scripts/gradeobjects.py data output
