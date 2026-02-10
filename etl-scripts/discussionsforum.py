@@ -86,14 +86,11 @@ def main(raw_base: str, out_base: str):
     )
     spark.sparkContext.setLogLevel("WARN")
 
-    # --- Load your dataset here (use preprocessed CSV if present to avoid column misalignment)
-    discussions_dir = Path(RAW_BASE) / "DiscussionsForum"
-    preprocessed = discussions_dir / "DiscussionForums_preprocessed.csv"
-    source = discussions_dir / "DiscussionForums.csv"
-    csv_path = str(preprocessed) if preprocessed.exists() else str(source)
-    if preprocessed.exists():
-        print(f"[ETL] Using preprocessed CSV: {csv_path}")
-    discussion_forums_raw = read_csv(csv_path, discussion_forums_schema)
+    # --- Load your dataset here
+    discussion_forums_raw = read_csv(
+        f"{RAW_BASE}/DiscussionsForum/DiscussionForums.csv",
+        discussion_forums_schema,
+    )
 
     # --- structural + schema profiling (step 1) ---
     print_structural_profile(
