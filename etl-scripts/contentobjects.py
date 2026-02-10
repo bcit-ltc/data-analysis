@@ -135,14 +135,8 @@ def main(raw_base: str, out_base: str):
     )
 
 
-
-
-
-
-
-
     # --- publish cleaned dataset ---
-    # write_csv_publish(df, DATASET_NAME, DATASET_TABLE)
+    write_csv_publish(df, DATASET_NAME, DATASET_TABLE)
 
 
 
