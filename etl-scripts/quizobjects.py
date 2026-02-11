@@ -102,7 +102,7 @@ def main(raw_base: str, out_base: str):
     spark.sparkContext.setLogLevel("WARN")
 
     # --- Load your dataset here
-    quiz_objects_raw = read_csv(f"{RAW_BASE}/QuizObjects/QuizObjects.csv", quiz_objects_schema)
+    quiz_objects_raw = read_csv(f"{RAW_BASE}/QuizObjects/QuizObjects.csv", quiz_objects_schema).cache()
 
     # --- structural + schema profiling (step 1) ---
     print_structural_profile(
@@ -133,6 +133,7 @@ def main(raw_base: str, out_base: str):
         "creation_date",
         "last_modified",
     ])
+    df = df.cache()
 
     # --- quality validation + scorecard (step 3) ---
     print_quality_report(
@@ -159,6 +160,9 @@ def main(raw_base: str, out_base: str):
 
     # --- publish cleaned dataset ---
     write_csv_publish(df, DATASET_NAME, DATASET_TABLE)
+
+    quiz_objects_raw.unpersist()
+    df.unpersist()
 
 
 if __name__ == '__main__':
