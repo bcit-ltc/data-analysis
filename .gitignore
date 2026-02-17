@@ -8,6 +8,8 @@ data/**/*.csv
 !data/**/readme.md
 
 output/
+etl-output/
+deidentification-output/
 .DS_Store
 
 # Python bytecode caches

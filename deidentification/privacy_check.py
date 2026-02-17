@@ -160,7 +160,7 @@ def _format_report_text(report: DatasetPrivacyReport) -> str:
 
 def _infer_dataset_table_from_relpath(relpath: str) -> (str, str):
     parts = relpath.split(os.sep)
-    # Expected ETL layout: output/{dataset}/{table}/data
+    # Expected ETL layout: etl-output/{dataset}/{table}/data
     if len(parts) >= 3 and parts[2] == "data":
         dataset = parts[0]
         table = parts[1]
@@ -222,13 +222,16 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--input-dir",
-        default="output",
-        help="Directory containing ETL outputs (default: 'output').",
+        default="etl-output",
+        help="Directory containing ETL outputs (default: 'etl-output').",
     )
     parser.add_argument(
         "--output-dir",
-        default="/output",
-        help="Directory where privacy reports will be written (default: '/output').",
+        default="deidentification-output",
+        help=(
+            "Directory where privacy reports will be written "
+            "(default: 'deidentification-output')."
+        ),
     )
     return parser.parse_args(argv)
 
