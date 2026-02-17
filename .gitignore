@@ -9,7 +9,15 @@ data/**/*.csv
 
 output/
 etl-output/
-deidentification-output/
+
+# Ignore everything in the deidentification-output folder
+deidentification-output/**
+# But do NOT ignore the README file inside deidentification-output
+!deidentification-output/README.md
+!deidentification-output/Readme.md
+!deidentification-output/**/README.md
+!deidentification-output/**/Readme.md
+!deidentification-output/**/readme.md
 .DS_Store
 
 # Python bytecode caches
