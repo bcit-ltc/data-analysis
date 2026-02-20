@@ -1,10 +1,18 @@
 import sys
 from pyspark.sql import SparkSession
-from pyspark.sql import functions as F
-from pyspark.sql import Window
 from pyspark.sql.types import (
-    StructType, StructField, IntegerType, StringType, BooleanType, TimestampType, LongType
+    StructType, StructField, IntegerType, StringType, BooleanType, LongType, TimestampType
 )
+from common.structural_schema_profiling import print_structural_profile
+from common.standardization_canonicalization import (
+    normalize_column_names,
+    canonicalize_nulls,
+    trim_whitespace,
+)
+from common.quality_validation import print_quality_report
+
+DATASET_NAME = "roledetails"
+DATASET_TABLE = "roledetails"
 
 # ---------- schemas ----------
 role_details_schema = StructType([
@@ -52,25 +60,9 @@ def read_csv(path: str, schema: StructType):
         .load(path)
     )
 
-def norm_ws(col):
-    # trim + collapse internal whitespace
-    return F.trim(F.regexp_replace(col, r"\s+", " "))
 
-def nullify_blanks(col):
-    return F.when(F.trim(F.col(col)) == "", None).otherwise(F.col(col))
-
-def format_ts_for_csv(df, ts_cols):
-    # publish timestamps as ISO-like strings (UTC-ish). adjust if you need strict ISO 8601 with 'Z'
-    out = df
-    for c in ts_cols:
-        if c in out.columns:
-            out = out.withColumn(c, F.date_format(F.col(c), "yyyy-MM-dd'T'HH:mm:ss"))
-    return out
-
-def write_csv_publish(df, name: str, single_file: bool = False):
-    out = df
-    if single_file:
-        out = out.coalesce(1)
+def write_csv_publish(df, dataset_name: str, table_name: str, single_file: bool = False):
+    out = df.coalesce(1) if single_file else df
 
     (out.write
         .mode("overwrite")
@@ -80,7 +72,7 @@ def write_csv_publish(df, name: str, single_file: bool = False):
         .option("escape", "\"")
         .option("emptyValue", "")
         .option("nullValue", "")
-        .save(f"{OUT_BASE}/{name}")
+        .save(f"{OUT_BASE}/{dataset_name}/{table_name}/data")
     )
 
 def main(raw_base: str, out_base: str):
@@ -96,91 +88,48 @@ def main(raw_base: str, out_base: str):
     )
     spark.sparkContext.setLogLevel("WARN")
 
-    role_details_raw = read_csv(f"{RAW_BASE}/RoleDetails/RoleDetails.csv", role_details_schema)
-
-    # role_details_raw.printSchema()
-
-    from pyspark.sql import functions as F
-
-    # Trim and normalize text fields
-    df = role_details_raw.withColumn("RoleName", norm_ws("RoleName")) \
-                     .withColumn("RoleAlias", norm_ws("RoleAlias")) \
-                     .withColumn("RoleCode", norm_ws("RoleCode")) \
-                     .withColumn("Description", norm_ws("Description")) \
-                     .withColumn("ClassListRoleName", norm_ws("ClassListRoleName"))
-
-    # Nullify blank text fields
-    df = df.withColumn("Description", nullify_blanks("Description"))
-
-    # deduplicate roles 
-    df = df.dropDuplicates(["OrgUnitId", "RoleId"])
-    
-    # add IsDeleted and IsActive columns
-    df = df.withColumn("IsDeleted", F.col("DeletedBy").isNotNull()) \
-           .withColumn("IsActive", F.col("DeletedBy").isNull())
-
-    roles_active = df.filter(F.col("IsActive"))
-
-    w = Window.partitionBy("OrgUnitId", "RoleId").orderBy(F.col("LastModifiedDate").desc_nulls_last())
-    latest = df.withColumn("rn", F.row_number().over(w)) \
-            .filter(F.col("rn") == 1) \
-            .drop("rn")
-
-    # Feature engineering / derived flags
-
-    df = df.withColumn(
-    "IsVisibleToLearners",
-    F.col("ShowInContent") |
-    F.col("ShowInGrades") |
-    F.col("ShowInDiscussionAssess") |
-    F.col("ShowInDiscussionStats") |
-    F.col("ShowInAttendance") |
-    F.col("ShowInUserProgress")
+    # --- Load your dataset here
+    role_details_raw = read_csv(
+        f"{RAW_BASE}/RoleDetails/RoleDetails.csv", 
+        role_details_schema
     )
 
-    # Group roles into coarse categories by name/code
-
-    df = df.withColumn(
-    "RoleCategory",
-    F.when(F.lower("RoleName").like("%student%"), "Student")
-     .when(F.lower("RoleName").like("%instructor%"), "Instructor")
-     .when(F.lower("RoleName").like("%ta%"), "TA")
-     .when(F.lower("RoleName").like("%observer%"), "Observer")
-     .otherwise("Other")
+    # --- structural + schema profiling (step 1) ---
+    print_structural_profile(
+        role_details_raw,
+        dataset_name=DATASET_NAME,
+        table_name=DATASET_TABLE,
+        top_values_k=10,
+        output_base_dir=OUT_BASE,
     )
 
-    # Combine course access flags
+    # --- dataset-specific standardization, validation, and publishing below ---
 
-    df = df.withColumn(
-    "CanAccessNonCurrentCourses",
-    F.col("AccessPastCourses") | F.col("AccessFutureCourses")
+    # --- standardization + canonicalization (step 2) ---
+    df = normalize_column_names(role_details_raw)
+    # Canonicalize only specific string columns; crash fast if mis-specified
+    df = canonicalize_nulls(df, columns=["description", "class_list_role_name", "role_alias", "role_code"])
+    # Trim whitespace in all string columns
+    df = trim_whitespace(df)
+
+    # --- quality validation + scorecard (step 3) ---
+    print_quality_report(
+        df,
+        dataset_name=DATASET_NAME,
+        key_columns=["org_unit_id", "role_id"],
+        numeric_columns=[
+            "org_unit_id",
+            "role_id",
+            "sort_order",
+            "deleted_by",
+        ],
+        table_name=DATASET_TABLE,
+        output_base_dir=OUT_BASE,
     )
 
-    # Modeling for downstream analytics
 
-    summary = df.groupBy("OrgUnitId", "RoleCategory") \
-            .agg(F.countDistinct("RoleId").alias("RoleCount"))
-
-    # Quality checks
-
-    bad_rows = df.filter(F.col("RoleId").isNull() | F.col("RoleName").isNull())
-    if bad_rows.count() > 0:
-        print(f"Found bad rows:{bad_rows.count()}")
-        # bad_rows.select(
-        # "OrgUnitId",  # or drop this if not needed
-        # "RoleId",
-        # "RoleName",
-        # "RoleCode"
-        # ).show(truncate=False)
-        # sys.exit(1)
-    
-
-    write_csv_publish(
-        format_ts_for_csv(df, ["LastModifiedDate"]),
-        "role_details",
-    )
-
-    # df.printSchema()
+    # --- publish cleaned dataset ---
+    write_csv_publish(df, DATASET_NAME, DATASET_TABLE)
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
