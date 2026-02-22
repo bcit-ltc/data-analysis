@@ -70,7 +70,7 @@ def main(raw_base: str, out_base: str):
     spark.sparkContext.setLogLevel("WARN")
 
     # --- Load your dataset here
-    audio_video_processed_raw = read_csv(f"{RAW_BASE}/AudioVideoProcessed/AudioVideoProcessed.csv", audio_video_processed_schema)
+    audio_video_processed_raw = read_csv(f"{RAW_BASE}/ContentService/AudioVideoProcessed.csv", audio_video_processed_schema)
 
     # --- structural + schema profiling (step 1) ---
     print_structural_profile(
