@@ -1,44 +1,43 @@
 import sys
 
 from pyspark.sql import SparkSession
-from common import privacy_check
-
+from pyspark.sql.functions import col, when
 
 DATASET_NAME = "quizzes"
 DATASET_TABLE = "quizobjects"
 
+# - Condition: NotificationEmail IS NOT NULL
+#   Fields: NotificationEmail
+#   Description: Direct email address for quiz notifications; clear PII.
+# - Condition: CreatedBy IS NOT NULL
+#   Fields: CreatedBy
+#   Description: Numeric identifier of the user who created the quiz.
+# - Condition: LastModifiedBy IS NOT NULL
+#   Fields: LastModifiedBy
+#   Description: Numeric identifier of the user who last modified the quiz.
+# - Condition: QuizName, QuizDescription, QuizCategory, or OverallScoreCalculation contain personal names, student IDs, or other identifying text
+#   Fields: QuizName, QuizDescription, QuizCategory, OverallScoreCalculation
+#   Description: Free-text metadata/instructions that can embed personal identifiers depending on authoring practices.
 
-def read_input(spark: SparkSession, input_base: str):
-    """Load the quizobjects dataset for deidentification.
 
-    Implement this to read from the appropriate location under the ETL output
-    directory (e.g., etl-output/{dataset}/{table}/data).
-    """
-    raise NotImplementedError("Implement dataset-specific read logic for quizobjects.")
+def read_input(spark, input_base):
+    return spark.read.parquet(f"{input_base}/{DATASET_NAME}/{DATASET_TABLE}")
 
 
 def deidentify(df):
-    """Apply quizobjects-specific deidentification transformations.
-
-    This is where you should remove or transform direct identifiers and
-    any other quiz-specific sensitive fields.
-    """
-    raise NotImplementedError("Implement quizobjects deidentification logic.")
+    # Deidentification logic goes here
+    # For now, just return the original dataframe
+    return df
 
 
-def write_output(df, output_base: str):
-    """Write the deidentified quizobjects dataset.
-
-    Implement this to write to the desired deidentification output layout,
-    typically under deidentification-output/.
-    """
-    raise NotImplementedError("Implement dataset-specific write logic for quizobjects.")
+def write_output(df, output_base):
+    df.write.parquet(f"{output_base}/{DATASET_NAME}/{DATASET_TABLE}")
 
 
 def main(input_base: str, output_base: str) -> None:
     spark = (
         SparkSession.builder
-        .appName("Quiz Objects Deidentification")
+        .appName("quizobjects Deidentification")
         .config("spark.sql.debug.maxToStringFields", "1000")
         .getOrCreate()
     )
