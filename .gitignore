@@ -10,6 +10,9 @@ data/**/*.csv
 output/
 # Ignore everything in the etl-output folder
 etl-output/**
+# Allow traversing into etl-output directories so we can re-include specific files
+!etl-output/
+!etl-output/**/
 # But do NOT ignore the README file inside etl-output
 !etl-output/README.md
 !etl-output/Readme.md
