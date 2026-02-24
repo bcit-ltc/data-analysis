@@ -1,0 +1,802 @@
+================================================================================
+BCIT LEARNING MANAGEMENT SYSTEM (LMS) DATA DICTIONARY
+Dataset Metadata and Integration Guide
+================================================================================
+
+Publication Date: February 24, 2026
+Data Source: BCIT D2L Brightspace Learning Management System
+Processing Status: De-identified and Quality Validated
+
+================================================================================
+OVERVIEW
+================================================================================
+
+This data dictionary documents eight processed datasets extracted from the BCIT 
+Learning Management System. All datasets have undergone ETL (Extract, Transform, 
+Load) processing, including deidentification of personally identifiable 
+information (PII), standardization of column names, and comprehensive quality 
+validation. The datasets span course content, assessments, organizational 
+structures, and learning analytics from the institutional LMS.
+
+================================================================================
+DATASET CATALOG
+================================================================================
+
+1. CONTENT OBJECTS DATASET
+   Location: etl-output/contentdata/contentobjects/data/
+   
+   DESCRIPTION:
+   The Content Objects dataset represents the hierarchical structure of course 
+   content within the LMS. This includes modules, topics, learning resources, 
+   and other content items that make up courses.
+   
+   STATISTICS:
+   - Total Records: 11,808,828
+   - Total Columns: 25
+   - Distinct Content Objects: 11,533,015 (97.7%)
+   - Organizational Units Covered: 98,039
+   - Date Range: 2008-2030 (based on start/end dates)
+   
+   KEY FIELDS:
+   - content_object_id: Unique identifier for each content item (PRIMARY KEY)
+   - org_unit_id: Links to organizational unit (course/section) (FOREIGN KEY)
+   - title: Human-readable name of the content object
+   - content_object_type: Type classification (80.2% Topic, 19.8% Module)
+   - parent_content_object_id: Hierarchical parent reference (FOREIGN KEY)
+   - location: URL or file path to content resource
+   - start_date, end_date, due_date: Content availability scheduling
+   - completion_type: How completion is tracked (99.2% Auto)
+   - depth: Hierarchical level (45.8% at depth 2, 29.4% at depth 3)
+   - sort_order: Display ordering within parent
+   - tool_id: Associated LMS tool identifier
+   - is_hidden, is_deleted: Visibility and deletion flags
+   - ai_utilization: AI-assisted content indicator (99.99% = 0, minimal AI use)
+   - last_modified: Timestamp of last modification
+   
+   DATA QUALITY:
+   - Completeness: High quality with <1% missing values in critical fields
+   - Duplicates: 94 duplicate content_object_id values (0.0008%)
+   - Notable Missingness: 96.6% missing start_date, 98.5% missing end_date
+   - Parse Success: >99.99% for all identifier fields
+   - Outliers: 45,091 records (0.38%) with unusual sort_order values
+   
+   COMMON VALUES:
+   - Most frequent titles: "Introduction", "Summary", "Videos", "References"
+   - Completion Type: 99.2% auto-completion
+   - Tools: 51000 (23.2%), 2000 (14.9%), 3000 (6.8%)
+
+--------------------------------------------------------------------------------
+
+2. CONTENT SERVICE (AUDIO/VIDEO) DATASET
+   Location: etl-output/contentservice/audiovideoprocessed/data/
+   
+   DESCRIPTION:
+   Tracks audio and video content processed through the LMS content service, 
+   including metadata about media files, revisions, transcoding requirements, 
+   and transcription needs.
+   
+   STATISTICS:
+   - Total Records: 35,831
+   - Total Columns: 10
+   - Distinct Content Items: 34,427 (96.1%)
+   - Total Revisions: 37,120 (103.6% - multiple versions per content)
+   
+   KEY FIELDS:
+   - content_id: Unique content identifier (COMPOSITE KEY)
+   - revision_id: Specific version identifier (COMPOSITE KEY)
+   - revision_number: Version sequence (99.8% version 1)
+   - type: Media type (75.5% Video, 24.5% Audio)
+   - source: Origin (82.2% VideoNote, 17.7% LmsContent)
+   - revision_size: File size in bytes (mean: 74.6 MB, max: 2.57 GB)
+   - duration: Length in seconds (mean: 399 seconds ≈ 6.6 minutes)
+   - required_transcoding: Boolean (82.4% True)
+   - required_transcribing: Boolean (4.7% True)
+   - last_modified: Modification timestamp
+   
+   DATA QUALITY:
+   - Completeness: 100% complete (no missing values)
+   - Duplicates: None (0%)
+   - Parse Success: 100% for all numeric fields
+   - Outliers: 1,010 records (2.8%) with large revision_size
+            809 records (2.3%) with unusual duration
+   
+   MEDIA CHARACTERISTICS:
+   - Most common duration: 0 seconds (14.1% - likely placeholders)
+   - Average video size: 74.6 MB
+   - Transcoding required: 82.4% of content
+   - Transcription required: 4.7% of content
+
+--------------------------------------------------------------------------------
+
+3. DISCUSSION FORUMS DATASET
+   Location: etl-output/discussions/discussionforums/data/
+   
+   DESCRIPTION:
+   Contains metadata about discussion forums configured across courses, 
+   including forum settings, participation requirements, visibility controls, 
+   and scheduling information.
+   
+   STATISTICS:
+   - Total Records: 151,894
+   - Total Columns: 17
+   - Distinct Forums: 144,841 (95.4%)
+   - Organizational Units: 42,506
+   
+   KEY FIELDS:
+   - org_unit_id: Course/section identifier (COMPOSITE KEY)
+   - forum_id: Unique forum identifier (COMPOSITE KEY)
+   - name: Forum title
+   - description: Forum instructions/description (64.6% missing)
+   - must_post_to_participate: Requires initial post to view others (2.6% True)
+   - allow_anon: Anonymous posting allowed (1.8% True)
+   - is_hidden: Visibility flag (7.7% hidden)
+   - requires_approval: Posts need approval before display
+   - sort_order: Display ordering
+   - is_deleted: Deletion flag (97.4% False)
+   - deleted_date, deleted_by_user_id: Deletion tracking
+   - result_id: Links to grade result (99.8% missing - most ungraded)
+   - start_date, end_date: Availability window (90.0% and 92.2% missing)
+   - start_date_availability_type, end_date_availability_type: Scheduling type
+   
+   DATA QUALITY:
+   - Completeness: Core fields complete; optional fields often missing
+   - Duplicates: None (0%)
+   - Parse Success: 100% for org_unit_id and forum_id
+   - Notable: 64.6% missing descriptions (many forums use default settings)
+   - Outliers: 2,303 records (1.5%) with unusual sort_order
+   
+   COMMON FORUMS:
+   - "Default Forum" (3.5%), "Introductions" (1.6%), "General" (1.4%)
+   - "Discussions" (1.4%), "General Discussions" (1.2%)
+
+--------------------------------------------------------------------------------
+
+4. GRADE OBJECTS DATASET
+   Location: etl-output/grades/gradeobjects/data/
+   
+   DESCRIPTION:
+   Comprehensive gradebook structure including grade items, categories, 
+   calculated grades, and final grades. Represents the complete grading 
+   hierarchy and configuration for all courses.
+   
+   STATISTICS:
+   - Total Records: 1,602,181
+   - Total Columns: 31
+   - Distinct Grade Objects: 1,397,044 (87.2%)
+   - Organizational Units: 193,243
+   
+   KEY FIELDS:
+   - grade_object_id: Unique grade item identifier (PRIMARY KEY)
+   - org_unit_id: Course/section identifier (FOREIGN KEY)
+   - parent_grade_object_id: Category hierarchy (FOREIGN KEY, 62.8% missing)
+   - name: Grade item name
+   - type_name: Grade type (64.0% Numeric, 11.8% Final Adjusted, 11.8% Final Calculated)
+   - grade_object_type_id: Type classification (1-9)
+   - start_date, end_date: Availability window (98.8% and 99.2% missing)
+   - max_points: Maximum achievable points (mean: 93.4, most common: 10.0 at 26.2%)
+   - weight: Weighting in grade calculation (14.7% missing, most common: 100.0%)
+   - grade_scheme_id: Letter grade scheme reference (90.3% missing)
+   - is_auto_pointed, is_formula, is_bonus: Configuration flags
+   - can_exceed_max_grade: Allows extra credit
+   - exclude_from_final_grade_calc: Exclusion flag
+   - num_lowest_grades_to_drop, num_highest_grades_to_drop: Drop policies
+   - weight_distribution_type: Manual/Even/ByPoints
+   - tool_name: Associated tool (Quizzes 17.4%, Dropbox 16.8%, Discussion 1.3%)
+   - associated_tool_item_id: Links to specific tool item (FOREIGN KEY)
+   - tool_id: Tool identifier
+   - sort_order: Display ordering
+   - is_deleted, deleted_date, deleted_by_user_id: Deletion tracking
+   - result_id: Result tracking identifier
+   - created_date, last_modified: Timestamps
+   - version: Version tracking
+   
+   DATA QUALITY:
+   - Completeness: Core fields complete; optional scheduling often missing
+   - Duplicates: None (0%)
+   - Parse Success: 100% for identifiers, 85.3% for weight (some non-numeric)
+   - Outliers: 10,717 records (0.67%) with unusual sort_order
+   
+   GRADE STRUCTURE:
+   - Final grades present in 11.8% of records (Final Adjusted + Final Calculated)
+   - Categories: 9.3% of grade objects
+   - Tools: Quizzes (17.4%), Assignments/Dropbox (16.8%), Discussions (1.3%)
+
+--------------------------------------------------------------------------------
+
+5. ORGANIZATIONAL UNITS DATASET
+   Location: etl-output/organizationalunits/organizationalunits/data/
+   
+   DESCRIPTION:
+   Hierarchical structure of the institution's organizational units including 
+   course offerings, course templates, sections, groups, terms, and colleges.
+   
+   STATISTICS:
+   - Total Records: 1,146,091
+   - Total Columns: 14
+   - Distinct Organizational Units: 1,070,242 (93.4%)
+   - Organizations: 4 entities (89.4% BCIT, 10.6% SYSTEM)
+   
+   KEY FIELDS:
+   - org_unit_id: Unique organizational unit identifier (PRIMARY KEY)
+   - organization: Institution name (89.4% BCIT)
+   - type: Unit classification (40.3% Group, 29.3% Section, 28.8% Course Offering)
+   - org_unit_type_id: Type identifier (69.6% type 4, 28.8% type 3)
+   - name: Unit name
+   - code: Short code identifier (4.6% missing)
+   - start_date, end_date: Active period (70.9% and 78.9% missing)
+   - is_active: Current active status (94.0% True)
+   - created_date: Creation timestamp
+   - is_deleted: Deletion flag (97.6% False)
+   - deleted_date, recycled_date: Deletion tracking
+   - version: Version control number
+   
+   DATA QUALITY:
+   - Completeness: Good for identifiers; dates often missing
+   - Duplicates: 2 records (0.0002%)
+   - Parse Success: >99.999% for all numeric fields
+   - Outliers: 348 records (0.03%) with unusual org_unit_type_id
+   
+   ORGANIZATIONAL BREAKDOWN:
+   - Groups: 40.3% (learning groups within sections)
+   - Sections: 29.3% (specific course instances)
+   - Course Offerings: 28.8% (scheduled course delivery)
+   - Course Templates: 1.6% (master course shells)
+   - Terms: 0.02%, Colleges: 0.02%
+   
+   COMMON NAMES:
+   - "Virtual classroom group" (5.8%), "Group 1" (3.5%), "Group 2" (2.2%)
+
+--------------------------------------------------------------------------------
+
+6. QUIZZES DATASET
+   Location: etl-output/quizzes/quizobjects/data/
+   
+   DESCRIPTION:
+   Quiz and assessment configurations including timing, attempts, grading, 
+   accessibility features, and AI study support settings.
+   
+   STATISTICS:
+   - Total Records: 701,708
+   - Total Columns: 37
+   - Distinct Quizzes: 669,264 (95.4%)
+   - Organizational Units: 62,601
+   
+   KEY FIELDS:
+   - quiz_id: Unique quiz identifier (PRIMARY KEY)
+   - org_unit_id: Course/section identifier (FOREIGN KEY)
+   - quiz_name: Quiz title
+   - quiz_description: Instructions (76.5% missing)
+   - quiz_category: Category classification (35.1% missing)
+   - category_id: Category identifier (35.1% missing)
+   - is_active: Active status flag
+   - start_date, end_date, due_date: Scheduling (49.8%, 54.5%, 85.8% missing)
+   - grade_object_id: Links to grade item (FOREIGN KEY, 60.4% missing)
+   - overall_score_calculation: Scoring method
+   - quiz_score_denominator: Total possible points (mean: varies widely)
+   - has_password: Password protection flag
+   - ip_restricted: IP address restriction flag
+   - time_limit: Time limit in minutes
+   - time_limit_enforced: Enforcement flag
+   - attempts_allowed: Maximum attempts (33.2% missing - unlimited)
+   - prevent_moving_backwards: Navigation restriction
+   - allow_hints: Hint availability
+   - notification_email: Email for notifications (98.5% missing)
+   - disable_pager_access: Pager restriction
+   - display_in_calendar: Calendar visibility
+   - is_attempt_rldb, is_subview_rldb: Database flags
+   - sort_order: Display ordering
+   - result_id: Result tracking (95.2% missing)
+   - is_retake_incorrect_only: Retake only wrong questions
+   - paging_type_id: Question paging type (93.2% missing)
+   - is_synchronous: Synchronous assessment flag
+   - deduction_percentage: Late penalty (100% missing)
+   - ai_study_support: AI assistance availability
+   - hide_question_points: Points visibility
+   - creation_date, created_by: Creation tracking
+   - last_modified, last_modified_by: Modification tracking
+   
+   DATA QUALITY:
+   - Completeness: Core fields complete; many optional features unused
+   - Duplicates: None (0%)
+   - Parse Success: 100% for identifiers
+   - Outliers: 2,223 records (0.32%) with unusual time_limit
+   
+   QUIZ CHARACTERISTICS:
+   - Most common: "Final Exam" (1.7%), "Quiz 1" (0.59%), "Quiz 2" (0.55%)
+   - Average time limit: varies widely
+   - Attempts: 11 distinct values when specified
+   - Creation tracking: 99.5% have creation_date
+
+--------------------------------------------------------------------------------
+
+7. RELEASE CONDITIONS DATASET
+   Location: etl-output/releaseconditions/releaseconditionsobjects/data/
+   
+   DESCRIPTION:
+   Prerequisites and release conditions that control when content becomes 
+   available to students based on completion of other activities, grades, 
+   dates, or enrollment status.
+   
+   STATISTICS:
+   - Total Records: 171,691
+   - Total Columns: 14
+   - Distinct Prerequisites: 91,699 (53.4%)
+   - Result Items: 118,606 (69.1%)
+   - Organizational Units: 13,701
+   
+   KEY FIELDS:
+   - pre_requisite_id: Condition identifier (COMPOSITE KEY)
+   - result_id: Item being unlocked (COMPOSITE KEY)
+   - org_unit_id: Course/section identifier (COMPOSITE KEY)
+   - name: Condition type description
+   - is_negative_condition: Inverse logic flag (0.7% True)
+   - pre_requisite_tool_id: Tool for prerequisite (e.g., 51000=Quiz)
+   - id1, id2: Additional identifiers for condition
+   - result_tool_id: Tool for result item
+   - uses_percentage: Grade as percentage flag (0.7% True)
+   - operator_type_desc: Logic operator (91.7% "All", 8.3% "Any")
+   - version: Version tracking
+   - guid1, guid2: GUID identifiers (100% missing)
+   
+   DATA QUALITY:
+   - Completeness: 100% for all active fields (guid fields unused)
+   - Duplicates: None (0%)
+   - Parse Success: 100% for all numeric fields
+   - Outliers: 7,092 records (4.1%) with unusual id1 values
+   
+   CONDITION TYPES:
+   - "Mark on a Quiz" (15.5%)
+   - "Completed Quiz Attempt" (14.9%)
+   - "Content topic visited" (14.2%)
+   - "Submission to dropbox" (12.0%)
+   - "Section Enrollment" (10.4%)
+   - "Group Membership" (10.0%)
+   
+   PREREQUISITE TOOLS:
+   - Quizzes (30.5%), Content (29.8%), Organizational Units (17.6%)
+   - Assignments (13.2%), Discussions (2.7%)
+
+--------------------------------------------------------------------------------
+
+8. ROLE DETAILS DATASET
+   Location: etl-output/roledetails/roledetails/data/
+   
+   DESCRIPTION:
+   User role definitions and permissions configured at the organizational unit 
+   level, controlling access to various LMS features and tools.
+   
+   STATISTICS:
+   - Total Records: 57 (small reference dataset)
+   - Total Columns: 31
+   - Distinct Roles: 45
+   - Organizational Units: 53
+   
+   KEY FIELDS:
+   - org_unit_id: Organizational unit for role (COMPOSITE KEY)
+   - role_id: Role identifier (COMPOSITE KEY, 100% missing)
+   - role_name: Role description (22.8% missing)
+   - role_code: Short code (12.3% missing)
+   - role_alias: Alias identifier (93.0% missing)
+   - description: Role details
+   - is_cascading: Inherits to child units (50.9% True)
+   - in_class_list: Shows in class list (98.2% missing)
+   - class_list_role_name: Display name in class list
+   - class_list_show_groups: Group visibility
+   - class_list_show_sections: Section visibility
+   - class_list_display_role: Display role in class list
+   - access_inactive_co: Access to inactive course offerings
+   - has_special_access: Special permissions flag (64.9% True)
+   - add_to_course_offering_groups: Auto-add to groups
+   - can_be_auto_enrolled_into_groups: Auto-enrollment to groups (63.2% True)
+   - add_to_course_offering_sections: Auto-add to sections
+   - can_be_auto_enrolled_into_sections: Auto-enrollment to sections (63.2% True)
+   - access_past_courses: Past course access (61.4% True)
+   - access_future_courses: Future course access (98.2% missing)
+   - sort_order: Display ordering (100% missing)
+   - show_in_content: Content tool visibility
+   - show_in_discussion_assess: Discussion assessment visibility
+   - show_in_discussion_stats: Discussion statistics visibility
+   - show_in_grades: Gradebook visibility
+   - show_in_attendance: Attendance register visibility
+   - allow_self_enroll_in_groups: Self-enrollment permission
+   - show_in_registration: Registration visibility
+   - show_in_user_progress: Progress tracking visibility (100% missing)
+   - last_modified_date, deleted_by: Tracking fields (100% missing)
+   
+   DATA QUALITY:
+   - Completeness: Many fields missing (small reference dataset)
+   - Duplicates: 4 records (7.0%)
+   - Parse Success: 91.2% for org_unit_id
+   - Note: Small dataset with institutional role configurations
+
+================================================================================
+DATASET RELATIONSHIPS AND JOIN STRATEGIES
+================================================================================
+
+The eight datasets form an interconnected ecosystem representing the complete 
+learning management system. Below are the recommended strategies for joining 
+datasets to enable comprehensive analysis.
+
+--------------------------------------------------------------------------------
+PRIMARY RELATIONSHIP: ORGANIZATIONAL UNITS AS CENTRAL HUB
+--------------------------------------------------------------------------------
+
+The Organizational Units dataset serves as the central hub connecting most 
+other datasets. Nearly all learning activities occur within an organizational 
+context (course offering, section, or group).
+
+JOIN PATTERN:
+  organizational_units (org_unit_id)
+    ├─→ content_objects (org_unit_id)
+    ├─→ discussion_forums (org_unit_id)
+    ├─→ grade_objects (org_unit_id)
+    ├─→ quizzes (org_unit_id)
+    ├─→ release_conditions (org_unit_id)
+    └─→ role_details (org_unit_id)
+
+SQL EXAMPLE:
+  SELECT o.type, o.name as course_name, COUNT(c.content_object_id) as content_count
+  FROM organizational_units o
+  LEFT JOIN content_objects c ON o.org_unit_id = c.org_unit_id
+  WHERE o.type = 'Course Offering' AND o.is_active = TRUE
+  GROUP BY o.org_unit_id, o.type, o.name;
+
+USE CASES:
+- Course-level analytics across all content types
+- Enrollment-based reporting (via organizational unit hierarchy)
+- Cross-course comparisons and benchmarking
+- Activity aggregation by department, term, or program
+
+--------------------------------------------------------------------------------
+CONTENT HIERARCHY: BUILDING THE LEARNING PATH
+--------------------------------------------------------------------------------
+
+Content Objects form a self-referential hierarchy that can be combined with 
+release conditions to understand learning pathways and prerequisites.
+
+JOIN PATTERN:
+  content_objects (content_object_id)
+    ├─→ content_objects (parent_content_object_id) [self-join for hierarchy]
+    ├─→ content_service (linked via tool_id and object_id1)
+    └─→ release_conditions (via result_id when result_tool_id = 37000)
+
+SQL EXAMPLE:
+  SELECT 
+    parent.title as module_name,
+    child.title as topic_name,
+    child.depth,
+    rc.name as prerequisite_type
+  FROM content_objects child
+  LEFT JOIN content_objects parent ON child.parent_content_object_id = parent.content_object_id
+  LEFT JOIN release_conditions rc ON child.content_object_id = rc.result_id
+  WHERE child.org_unit_id = [COURSE_ID]
+  ORDER BY child.sort_order;
+
+USE CASES:
+- Constructing full course navigation trees
+- Analyzing content depth and complexity
+- Tracking prerequisite chains
+- Identifying orphaned or unreachable content
+- Understanding adaptive learning pathways
+
+--------------------------------------------------------------------------------
+ASSESSMENT ECOSYSTEM: GRADES, QUIZZES, AND RESULTS
+--------------------------------------------------------------------------------
+
+Grade Objects connect to Quizzes and other assessment tools, forming the 
+complete assessment picture. Release Conditions can control access based on 
+assessment performance.
+
+JOIN PATTERN:
+  grade_objects (grade_object_id)
+    ├─→ quizzes (grade_object_id)
+    ├─→ release_conditions (via id1 when pre_requisite_tool_id = 51000)
+    └─→ organizational_units (org_unit_id)
+
+SQL EXAMPLE:
+  SELECT 
+    go.name as grade_item_name,
+    go.max_points,
+    go.weight,
+    q.quiz_name,
+    q.time_limit,
+    q.attempts_allowed,
+    COUNT(rc.pre_requisite_id) as unlocks_count
+  FROM grade_objects go
+  LEFT JOIN quizzes q ON go.grade_object_id = q.grade_object_id
+  LEFT JOIN release_conditions rc ON go.grade_object_id = rc.id1 
+    AND rc.pre_requisite_tool_id = 51000
+  WHERE go.org_unit_id = [COURSE_ID] 
+    AND go.type_name = 'Numeric'
+  GROUP BY go.grade_object_id, q.quiz_id;
+
+USE CASES:
+- Complete gradebook structure analysis
+- Assessment design patterns (timing, attempts, weights)
+- Grade-based prerequisite analysis
+- Weighted grade calculations
+- Assessment load distribution
+
+--------------------------------------------------------------------------------
+MULTIMEDIA INTEGRATION: LINKING VIDEO/AUDIO CONTENT
+--------------------------------------------------------------------------------
+
+Content Service data can be linked to Content Objects to analyze multimedia 
+usage patterns.
+
+JOIN PATTERN:
+  content_service (content_id)
+    └─→ content_objects (via tool_id = 699000 and object_id1)
+
+APPROXIMATE SQL EXAMPLE:
+  SELECT 
+    co.title,
+    co.org_unit_id,
+    cs.type,
+    cs.duration,
+    cs.revision_size / 1048576 as size_mb,
+    cs.required_transcribing
+  FROM content_service cs
+  INNER JOIN content_objects co 
+    ON co.tool_id = 699000 
+    AND CAST(co.object_id1 AS TEXT) LIKE '%' || CAST(cs.content_id AS TEXT) || '%'
+  WHERE cs.type = 'Video';
+
+NOTE: This join may require fuzzy matching or intermediate mapping tables 
+depending on the exact relationship between content_id and object_id1.
+
+USE CASES:
+- Video/audio usage statistics by course
+- Transcription coverage analysis
+- Media file size and storage analysis
+- Accessibility compliance tracking (transcription requirements)
+
+--------------------------------------------------------------------------------
+DISCUSSION PARTICIPATION STRUCTURE
+--------------------------------------------------------------------------------
+
+Discussion Forums link to Grade Objects when graded and can have release 
+conditions controlling access.
+
+JOIN PATTERN:
+  discussion_forums (forum_id, org_unit_id)
+    ├─→ grade_objects (via result_id)
+    ├─→ release_conditions (via result_id when result_tool_id = 13000)
+    └─→ organizational_units (org_unit_id)
+
+SQL EXAMPLE:
+  SELECT 
+    df.name as forum_name,
+    df.must_post_to_participate,
+    go.name as grade_item_name,
+    go.max_points,
+    COUNT(rc.pre_requisite_id) as prerequisite_count
+  FROM discussion_forums df
+  LEFT JOIN grade_objects go ON df.result_id = go.result_id
+  LEFT JOIN release_conditions rc ON df.result_id = rc.result_id 
+    AND rc.result_tool_id = 13000
+  WHERE df.org_unit_id = [COURSE_ID] AND df.is_deleted = FALSE
+  GROUP BY df.forum_id, go.grade_object_id;
+
+USE CASES:
+- Graded vs. ungraded discussion analysis
+- Participation requirement patterns
+- Discussion-based prerequisite analysis
+- Forum configuration best practices
+
+--------------------------------------------------------------------------------
+ADVANCED: MULTI-DATASET COURSE PROFILE
+--------------------------------------------------------------------------------
+
+Combining multiple datasets provides comprehensive course profiles.
+
+COMPREHENSIVE JOIN EXAMPLE:
+  SELECT 
+    o.name as course_name,
+    o.type as unit_type,
+    COUNT(DISTINCT c.content_object_id) as content_items,
+    COUNT(DISTINCT q.quiz_id) as quiz_count,
+    COUNT(DISTINCT df.forum_id) as forum_count,
+    COUNT(DISTINCT g.grade_object_id) as grade_items,
+    SUM(CASE WHEN g.type_name = 'Numeric' THEN 1 ELSE 0 END) as graded_items,
+    COUNT(DISTINCT rc.pre_requisite_id) as release_conditions,
+    AVG(cs.duration) as avg_video_duration
+  FROM organizational_units o
+  LEFT JOIN content_objects c ON o.org_unit_id = c.org_unit_id 
+    AND c.is_deleted = FALSE
+  LEFT JOIN quizzes q ON o.org_unit_id = q.org_unit_id 
+    AND q.is_active = TRUE
+  LEFT JOIN discussion_forums df ON o.org_unit_id = df.org_unit_id 
+    AND df.is_deleted = FALSE
+  LEFT JOIN grade_objects g ON o.org_unit_id = g.org_unit_id 
+    AND g.is_deleted = FALSE
+  LEFT JOIN release_conditions rc ON o.org_unit_id = rc.org_unit_id
+  LEFT JOIN content_service cs ON c.tool_id = 699000
+  WHERE o.type = 'Course Offering' 
+    AND o.is_active = TRUE
+  GROUP BY o.org_unit_id, o.name, o.type
+  ORDER BY content_items DESC;
+
+USE CASES:
+- Comprehensive course design analysis
+- Institutional benchmarking
+- Course quality metrics
+- Resource utilization patterns
+- Learning design consistency assessment
+
+--------------------------------------------------------------------------------
+ROLE-BASED ACCESS ANALYSIS
+--------------------------------------------------------------------------------
+
+Role Details can be analyzed in context of organizational units to understand 
+permission structures.
+
+JOIN PATTERN:
+  role_details (org_unit_id)
+    └─→ organizational_units (org_unit_id)
+
+SQL EXAMPLE:
+  SELECT 
+    o.type as unit_type,
+    r.role_name,
+    r.is_cascading,
+    r.show_in_grades,
+    r.show_in_content,
+    COUNT(*) as role_instances
+  FROM role_details r
+  INNER JOIN organizational_units o ON r.org_unit_id = o.org_unit_id
+  GROUP BY o.type, r.role_name, r.is_cascading, r.show_in_grades, r.show_in_content;
+
+USE CASES:
+- Permission audit and compliance
+- Custom role distribution analysis
+- Access pattern identification
+- Security configuration review
+
+================================================================================
+KEY IDENTIFIER MAPPINGS
+================================================================================
+
+ORGANIZATIONAL UNIT ID (org_unit_id):
+  - Primary institution-wide identifier
+  - Present in: organizational_units, content_objects, discussion_forums, 
+    grade_objects, quizzes, release_conditions, role_details
+  - Range: 6,605 to 1,214,715
+  - Can represent courses, sections, groups, or organizational structures
+
+CONTENT OBJECT ID (content_object_id):
+  - Unique content item identifier
+  - Present in: content_objects
+  - Can be parent_content_object_id in same table
+  - Links to release_conditions via result_id (when result_tool_id = 37000)
+
+GRADE OBJECT ID (grade_object_id):
+  - Unique grade item identifier
+  - Present in: grade_objects
+  - Can be parent_grade_object_id in same table
+  - Links to quizzes via grade_object_id
+  - Links to release_conditions via id1 (when pre_requisite_tool_id = 51000)
+
+QUIZ ID (quiz_id):
+  - Unique quiz identifier
+  - Present in: quizzes
+  - Links to grade_objects via grade_object_id
+  - Links to release_conditions via id1 (when pre_requisite_tool_id = 51000)
+
+FORUM ID (forum_id):
+  - Unique discussion forum identifier
+  - Present in: discussion_forums
+  - Links to release_conditions via result_id (when result_tool_id = 13000)
+
+RESULT ID (result_id):
+  - Links to gradebook results
+  - Present in: content_objects, discussion_forums, grade_objects, quizzes, 
+    release_conditions
+  - Often missing when items are not graded
+
+TOOL ID (tool_id):
+  - Identifies LMS tool type
+  - Common values:
+    * 2000: Assignments/Dropbox
+    * 3000: Discussions
+    * 37000: Content
+    * 51000: Quizzes
+    * 699000: Content Service (video/audio)
+
+================================================================================
+DATA QUALITY SUMMARY
+================================================================================
+
+OVERALL QUALITY: HIGH
+All datasets have undergone comprehensive quality validation including:
+- Duplicate detection and resolution
+- Missingness profiling
+- Numeric outlier detection
+- Parse success validation
+- Referential integrity checks (where applicable)
+
+KEY QUALITY METRICS:
+
+1. Completeness:
+   - Core identifiers: >99.9% complete across all datasets
+   - Optional fields: Variable (many scheduling fields 50-99% missing)
+   - Design note: High missingness in optional fields reflects real usage patterns
+
+2. Duplicates:
+   - Content Objects: 94 duplicates (0.0008%)
+   - Organizational Units: 2 duplicates (0.0002%)
+   - Role Details: 4 duplicates (7.0% - small reference table)
+   - All others: 0 duplicates
+
+3. Parse Success:
+   - Numeric identifiers: >99.9% successful parsing
+   - Dates and timestamps: Variable (60-100% depending on field)
+   - Some fields stored as text due to mixed data types in source
+
+4. Outliers:
+   - Detected using |value-mean| > 3.0*std rule
+   - Generally <1% of records per field
+   - Most outliers represent valid edge cases (e.g., very long quizzes)
+
+RECOMMENDED DATA CLEANING:
+- Handle missing dates based on analysis requirements
+- Investigate duplicate records in small tables before joining
+- Consider outliers as valid unless domain knowledge suggests otherwise
+- Validate cross-dataset joins with sample queries before full analysis
+
+================================================================================
+USAGE NOTES AND BEST PRACTICES
+================================================================================
+
+1. TEMPORAL ANALYSIS:
+   - Many start_date, end_date, due_date fields have high missingness
+   - Use creation_date and last_modified for temporal trends
+   - Filter by is_active and is_deleted for current state analysis
+
+2. HIERARCHICAL DATA:
+   - Content Objects and Grade Objects contain self-referential hierarchies
+   - Use recursive CTEs for full hierarchy traversal
+   - depth field in Content Objects facilitates level-based analysis
+
+3. PERFORMANCE OPTIMIZATION:
+   - Large tables: content_objects (11.8M), organizational_units (1.1M), 
+     grade_objects (1.6M), quizzes (701K)
+   - Index on: org_unit_id, content_object_id, grade_object_id, quiz_id
+   - Consider partitioning by org_unit_id for course-level analysis
+
+4. MISSING DATA INTERPRETATION:
+   - 100% missing: Field not used in BCIT's LMS configuration
+   - 50-99% missing: Optional feature, check is_deleted flag
+   - <50% missing: May indicate incomplete migration or data quality issue
+
+5. VERSIONING:
+   - version field present in multiple tables
+   - Tracks configuration changes over time
+   - Consider using MAX(version) for current state
+
+6. TOOL IDENTIFIERS:
+   - tool_id values are standardized across Brightspace/D2L platform
+   - Reference mapping table recommended for human-readable tool names
+
+================================================================================
+CONTACT AND SUPPORT
+================================================================================
+
+For questions about this data dictionary or the datasets:
+- Review ETL processing scripts in: /etl-scripts/
+- Check quality reports in: /etl-output/*/reports/
+- Refer to deidentification logs in: /deidentification/
+
+Dataset Processing Pipeline:
+1. Source Data: /data/
+2. ETL Scripts: /etl-scripts/
+3. Deidentification: /deidentification/
+4. Output: /etl-output/
+5. Quality Reports: /etl-output/*/reports/
+
+All datasets are provided in CSV format with standardized snake_case column 
+names for consistency and ease of use across different analysis platforms.
+
+================================================================================
+END OF DATA DICTIONARY
+================================================================================
