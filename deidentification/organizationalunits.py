@@ -7,7 +7,7 @@ from pyspark.sql import SparkSession
 DATASET_NAME = "organizationalunits"
 DATASET_TABLE = "organizationalunits"
 
-
+# PII risks: 
 # - Condition: None specifically identified from schema alone; table primarily describes courses/org units.
 #   Fields: Name, Code, Organization
 #   Description: Organizational labels; generally not PII, but could reference individuals if org-unit naming conventions include person names.

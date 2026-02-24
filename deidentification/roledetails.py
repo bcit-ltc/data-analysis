@@ -7,7 +7,7 @@ from pyspark.sql import SparkSession
 DATASET_NAME = "roledetails"
 DATASET_TABLE = "roledetails"
 
-
+# PII risks: 
 # - Condition: DeletedBy IS NOT NULL
 #   Fields: DeletedBy
 #   Description: Numeric identifier of the user associated with role deletion or modification (audit trail; pseudonymous personal data).

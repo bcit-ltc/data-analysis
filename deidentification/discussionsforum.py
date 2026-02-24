@@ -7,7 +7,7 @@ from pyspark.sql import SparkSession
 DATASET_NAME = "discussions"
 DATASET_TABLE = "discussionforums"
 
-
+# PII risks: 
 # - Condition: DeletedByUserId IS NOT NULL
 #   Fields: DeletedByUserId
 #   Description: Numeric identifier of the user who deleted the discussion forum (audit trail; pseudonymous personal data).

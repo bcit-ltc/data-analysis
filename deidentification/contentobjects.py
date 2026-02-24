@@ -7,7 +7,7 @@ from pyspark.sql import SparkSession
 DATASET_NAME = "contentdata"
 DATASET_TABLE = "contentobjects"
 
-
+# PII risks: 
 # - Condition: CreatedBy IS NOT NULL
 #   Fields: CreatedBy
 #   Description: Numeric identifier of the user who created the content object (pseudonymous personal data when user lookup exists).

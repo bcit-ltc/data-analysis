@@ -7,7 +7,7 @@ from pyspark.sql import SparkSession
 DATASET_NAME = "contentservice"
 DATASET_TABLE = "audiovideoprocessed"
 
-
+# PII risks: 
 # - Condition: Any row where this dataset is joined to user-identifying tables using ContentId or RevisionId.
 #   Fields: ContentId, RevisionId
 #   Description: Technical content identifiers that become personal data when mapped to specific users or enrollments.

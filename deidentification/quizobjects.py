@@ -6,6 +6,7 @@ from pyspark.sql.functions import col, when
 DATASET_NAME = "quizzes"
 DATASET_TABLE = "quizobjects"
 
+# PII risks: 
 # - Condition: NotificationEmail IS NOT NULL
 #   Fields: NotificationEmail
 #   Description: Direct email address for quiz notifications; clear PII.

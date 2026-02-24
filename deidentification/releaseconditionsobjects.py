@@ -7,7 +7,7 @@ from pyspark.sql import SparkSession
 DATASET_NAME = "releaseconditions"
 DATASET_TABLE = "releaseconditionsobjects"
 
-
+# PII risks: 
 # - Condition: None specifically identified from schema alone; table defines release-condition logic.
 #   Fields: Guid1, Guid2, Name
 #   Description: GUIDs and names for release conditions. These are unique technical identifiers and labels; they become privacy-relevant only if they encode or are mapped to user identities elsewhere.

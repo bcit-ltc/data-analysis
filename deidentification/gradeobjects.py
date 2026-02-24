@@ -7,7 +7,7 @@ from pyspark.sql import SparkSession
 DATASET_NAME = "grades"
 DATASET_TABLE = "gradeobjects"
 
-
+# PII risks: 
 # - Condition: DeletedByUserId IS NOT NULL
 #   Fields: DeletedByUserId
 #   Description: Numeric identifier of the user who deleted the grade object (audit trail; pseudonymous personal data).
