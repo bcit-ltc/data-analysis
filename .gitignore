@@ -8,7 +8,14 @@ data/**/*.csv
 !data/**/readme.md
 
 output/
-etl-output/
+# Ignore everything in the etl-output folder
+etl-output/**
+# But do NOT ignore the README file inside etl-output
+!etl-output/README.md
+!etl-output/Readme.md
+!etl-output/**/README.md
+!etl-output/**/Readme.md
+!etl-output/**/readme.md
 
 # Ignore everything in the deidentification-output folder
 deidentification-output/**
