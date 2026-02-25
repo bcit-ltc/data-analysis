@@ -1,0 +1,75 @@
+Dataset: contentservice.audiovideoprocessed (etl-scripts/audiovideoprocessed.py)
+PII-risky rows:
+- Condition: Any row where this dataset is joined to user-identifying tables using ContentId or RevisionId.
+  Fields: ContentId, RevisionId
+  Description: Technical content identifiers that become personal data when mapped to specific users or enrollments.
+
+Dataset: contentdata.contentobjects (etl-scripts/contentobjects.py)
+PII-risky rows:
+- Condition: CreatedBy IS NOT NULL
+  Fields: CreatedBy
+  Description: Numeric identifier of the user who created the content object (pseudonymous personal data when user lookup exists).
+- Condition: LastModifiedBy IS NOT NULL
+  Fields: LastModifiedBy
+  Description: Numeric identifier of the user who last modified the content object.
+- Condition: DeletedBy IS NOT NULL
+  Fields: DeletedBy
+  Description: Numeric identifier of the user who deleted the content object.
+- Condition: Title or Location contains personal names, student IDs, or other identifying text
+  Fields: Title, Location
+  Description: Free-text metadata that may embed names, IDs, or other identifiers depending on how instructors author content.
+
+Dataset: organizationalunits.organizationalunits (etl-scripts/organizationalunits.py)
+PII-risky rows:
+- Condition: None specifically identified from schema alone; table primarily describes courses/org units.
+  Fields: Name, Code, Organization
+  Description: Organizational labels; generally not PII, but could reference individuals if org-unit naming conventions include person names.
+
+Dataset: grades.gradeobjects (etl-scripts/gradeobjects.py)
+PII-risky rows:
+- Condition: DeletedByUserId IS NOT NULL
+  Fields: DeletedByUserId
+  Description: Numeric identifier of the user who deleted the grade object (audit trail; pseudonymous personal data).
+- Condition: Name or ShortName contains personal names, student IDs, or other identifying text
+  Fields: Name, ShortName
+  Description: Free-text labels for grade items that can include identifiers if authored that way.
+
+Dataset: roledetails.roledetails (etl-scripts/roledetails.py)
+PII-risky rows:
+- Condition: DeletedBy IS NOT NULL
+  Fields: DeletedBy
+  Description: Numeric identifier of the user associated with role deletion or modification (audit trail; pseudonymous personal data).
+- Condition: RoleName, Description, ClassListRoleName, RoleAlias, or RoleCode contain personal names, student IDs, or other identifying text
+  Fields: RoleName, Description, ClassListRoleName, RoleAlias, RoleCode
+  Description: Free-text role metadata that could embed identifiers if roles are named after specific individuals.
+
+Dataset: quizzes.quizobjects (etl-scripts/quizobjects.py)
+PII-risky rows:
+- Condition: NotificationEmail IS NOT NULL
+  Fields: NotificationEmail
+  Description: Direct email address for quiz notifications; clear PII.
+- Condition: CreatedBy IS NOT NULL
+  Fields: CreatedBy
+  Description: Numeric identifier of the user who created the quiz.
+- Condition: LastModifiedBy IS NOT NULL
+  Fields: LastModifiedBy
+  Description: Numeric identifier of the user who last modified the quiz.
+- Condition: QuizName, QuizDescription, QuizCategory, or OverallScoreCalculation contain personal names, student IDs, or other identifying text
+  Fields: QuizName, QuizDescription, QuizCategory, OverallScoreCalculation
+  Description: Free-text metadata/instructions that can embed personal identifiers depending on authoring practices.
+
+Dataset: discussions.discussionforums (etl-scripts/discussionsforum.py)
+PII-risky rows:
+- Condition: DeletedByUserId IS NOT NULL
+  Fields: DeletedByUserId
+  Description: Numeric identifier of the user who deleted the discussion forum (audit trail; pseudonymous personal data).
+- Condition: Name or Description contains personal names, student IDs, or other identifying text
+  Fields: Name, Description
+  Description: Forum titles and descriptions that may reference individuals if authored that way.
+
+Dataset: releaseconditions.releaseconditionsobjects (etl-scripts/releaseconditionsobjects.py)
+PII-risky rows:
+- Condition: None specifically identified from schema alone; table defines release-condition logic.
+  Fields: Guid1, Guid2, Name
+  Description: GUIDs and names for release conditions. These are unique technical identifiers and labels; they become privacy-relevant only if they encode or are mapped to user identities elsewhere.
+
