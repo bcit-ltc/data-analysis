@@ -1,0 +1,37 @@
+from pyspark.sql.types import (
+    StructType, StructField, IntegerType, StringType, BooleanType, TimestampType, LongType, DoubleType
+)
+
+grade_objects_schema = StructType([
+    StructField("grade_object_id", LongType(), False),
+    StructField("org_unit_id", LongType(), False),
+    StructField("parent_grade_object_id", LongType(), True),
+    StructField("name", StringType(), True),
+    StructField("type_name", StringType(), True),
+    StructField("start_date", TimestampType(), True),
+    StructField("end_date", TimestampType(), True),
+    StructField("is_auto_pointed", BooleanType(), True),
+    StructField("is_formula", BooleanType(), True),
+    StructField("is_bonus", BooleanType(), True),
+    StructField("max_points", DoubleType(), True),
+    StructField("can_exceed_max_grade", BooleanType(), True),
+    StructField("exclude_from_final_grade_calc", BooleanType(), True),
+    StructField("grade_scheme_id", LongType(), True),
+    StructField("weight", DoubleType(), True),
+    StructField("num_lowest_grades_to_drop", IntegerType(), True),
+    StructField("num_highest_grades_to_drop", IntegerType(), True),
+    StructField("weight_distribution_type", StringType(), True),
+    StructField("created_date", TimestampType(), True),
+    StructField("tool_name", StringType(), True),
+    StructField("associated_tool_item_id", LongType(), True),
+    StructField("last_modified", TimestampType(), True),
+    StructField("short_name", StringType(), True),
+    StructField("grade_object_type_id", IntegerType(), True),
+    StructField("sort_order", IntegerType(), True),
+    StructField("is_deleted", BooleanType(), True),
+    StructField("deleted_date", TimestampType(), True),
+    StructField("deleted_by_user_id", LongType(), True),
+    StructField("result_id", LongType(), True),
+    StructField("tool_id", IntegerType(), True),
+    StructField("version", LongType(), True),
+])
