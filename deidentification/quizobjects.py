@@ -1,7 +1,12 @@
 import sys
 
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, when
+from schemas.quizobjects_schemas import quiz_objects_schema
+from common.pii_detection import has_email_pattern, has_student_id_pattern, redact_pii_fields
+from common.create_pii_report import create_pii_report
+from pyspark.sql.types import (
+    StructType, StructField, IntegerType, StringType, BooleanType, TimestampType, LongType, DoubleType
+)
 
 DATASET_NAME = "quizzes"
 DATASET_TABLE = "quizobjects"
@@ -20,22 +25,37 @@ DATASET_TABLE = "quizobjects"
 #   Fields: QuizName, QuizDescription, QuizCategory, OverallScoreCalculation
 #   Description: Free-text metadata/instructions that can embed personal identifiers depending on authoring practices.
 
+# ---------- helpers ----------
+def read_csv(path: str, schema: StructType):
+    return (spark.read
+        .format("csv")
+        .option("header", "true")
+        .option("mode", "PERMISSIVE")
+        .schema(schema)
+        .load(path)
+    )
 
-def read_input(spark, input_base):
-    return spark.read.parquet(f"{input_base}/{DATASET_NAME}/{DATASET_TABLE}")
+def write_csv_publish(df, dataset_name: str, table_name: str, single_file: bool = False):
+    out = df.coalesce(1) if single_file else df
 
-
-def deidentify(df):
-    # Deidentification logic goes here
-    # For now, just return the original dataframe
-    return df
-
-
-def write_output(df, output_base):
-    df.write.parquet(f"{output_base}/{DATASET_NAME}/{DATASET_TABLE}")
+    (out.write
+        .mode("overwrite")
+        .format("csv")
+        .option("header", "true")
+        .option("quoteAll", "true")
+        .option("escape", "\"")
+        .option("emptyValue", "")
+        .option("nullValue", "")
+        .save(f"{OUT_BASE}/{dataset_name}/{table_name}/data")
+    )
 
 
 def main(input_base: str, output_base: str) -> None:
+    global INPUT_BASE, OUT_BASE, spark
+
+    INPUT_BASE = input_base
+    OUT_BASE = output_base
+
     spark = (
         SparkSession.builder
         .appName("quizobjects Deidentification")
@@ -44,11 +64,43 @@ def main(input_base: str, output_base: str) -> None:
     )
     spark.sparkContext.setLogLevel("WARN")
 
-    df = read_input(spark, input_base)
-    deid_df = deidentify(df)
-    write_output(deid_df, output_base)
+    # --- Load your dataset here
+    quizzes = read_csv(f"{INPUT_BASE}/{DATASET_NAME}/{DATASET_TABLE}/data", quiz_objects_schema)
+    
+    total_records = quizzes.count()
+    
+    # Track dropped columns
+    dropped_columns = ["notification_email", "created_by", "last_modified_by"]
+    quizzes = quizzes.drop(*dropped_columns)
 
-    spark.stop()
+    # - Condition: QuizName, QuizDescription, QuizCategory, or OverallScoreCalculation contain personal names, student IDs, or other identifying text
+    #   Fields: QuizName, QuizDescription, QuizCategory, OverallScoreCalculation
+    #   Description: Free-text metadata/instructions that can embed personal identifiers depending on authoring practices.
+    
+    # Redact PII fields instead of dropping rows
+    quizzes, redaction_stats = redact_pii_fields(
+        quizzes,
+        {
+            "quiz_name": "[PII_REDACTED_QUIZ_NAME]",
+            "quiz_description": "[PII_REDACTED_QUIZ_DESCRIPTION]",
+            "quiz_category": "[PII_REDACTED_QUIZ_CATEGORY]",
+            "overall_score_calculation": "[PII_REDACTED_OVERALL_SCORE_CALCULATION]"
+        },
+        detection_func=lambda col_name: has_email_pattern(col_name) | has_student_id_pattern(col_name)
+    )
+
+    # --- publish dataset ---
+    write_csv_publish(quizzes, DATASET_NAME, DATASET_TABLE, single_file=True)
+    
+    # --- generate PII report ---
+    create_pii_report(
+        OUT_BASE,
+        DATASET_NAME,
+        DATASET_TABLE,
+        dropped_columns,
+        redaction_stats,
+        total_records
+    )
 
 
 if __name__ == "__main__":

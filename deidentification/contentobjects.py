@@ -1,8 +1,12 @@
 import sys
 
 from pyspark.sql import SparkSession
-
-
+from schemas.contentobjects_schemas import content_objects_schema
+from common.pii_detection import has_email_pattern, has_student_id_pattern, redact_pii_fields
+from common.create_pii_report import create_pii_report
+from pyspark.sql.types import (
+    StructType, StructField, IntegerType, StringType, BooleanType, TimestampType, LongType
+)
 
 DATASET_NAME = "contentdata"
 DATASET_TABLE = "contentobjects"
@@ -21,9 +25,36 @@ DATASET_TABLE = "contentobjects"
 #   Fields: Title, Location
 #   Description: Free-text metadata that may embed names, IDs, or other identifiers depending on how instructors author content.
 
+# ---------- helpers ----------
+def read_csv(path: str, schema: StructType):
+    return (spark.read
+        .format("csv")
+        .option("header", "true")
+        .option("mode", "PERMISSIVE")
+        .schema(schema)
+        .load(path)
+    )
 
+def write_csv_publish(df, dataset_name: str, table_name: str, single_file: bool = False):
+    out = df.coalesce(1) if single_file else df
+
+    (out.write
+        .mode("overwrite")
+        .format("csv")
+        .option("header", "true")
+        .option("quoteAll", "true")
+        .option("escape", "\"")
+        .option("emptyValue", "")
+        .option("nullValue", "")
+        .save(f"{OUT_BASE}/{dataset_name}/{table_name}/data")
+    )
 
 def main(input_base: str, output_base: str) -> None:
+    global INPUT_BASE, OUT_BASE, spark
+
+    INPUT_BASE = input_base
+    OUT_BASE = output_base
+
     spark = (
         SparkSession.builder
         .appName("contentobjects Deidentification")
@@ -32,11 +63,47 @@ def main(input_base: str, output_base: str) -> None:
     )
     spark.sparkContext.setLogLevel("WARN")
 
-    df = read_input(spark, input_base)
-    deid_df = deidentify(df)
-    write_output(deid_df, output_base)
+    # --- Load your dataset here
+    content_objects= read_csv(f"{INPUT_BASE}/{DATASET_NAME}/{DATASET_TABLE}/data", content_objects_schema)
+    
+    total_records = content_objects.count()
+    
+    # Track dropped columns
+    dropped_columns = ["created_by", "last_modified_by", "deleted_by"]
+    content_objects = content_objects.drop(*dropped_columns)
 
-    spark.stop()
+    # check the Title, Location columns and create logic :
+    # - Condition: Title or Location contains personal names, student IDs, or other identifying text
+    #   Fields: Title, Location
+    #   Description: Free-text metadata that may embed names, IDs, or other identifiers depending on how instructors author content.
+
+    # Redact PII fields instead of dropping rows
+    # Email-like text in title or location
+    # Pattern: something@something.tld (case-insensitive)
+    # Student-ID pattern in title or location
+    # Pattern: A followed by 8 digits (e.g., A00123456)
+    content_objects, redaction_stats = redact_pii_fields(
+        content_objects,
+        {
+            "title": "[PII_REDACTED_TITLE]",
+            "location": "[PII_REDACTED_LOCATION]"
+        },
+        detection_func=lambda col_name: has_email_pattern(col_name) | has_student_id_pattern(col_name)
+    )
+    # content_objects.show(20, truncate=False)
+
+    # --- publish dataset ---
+    write_csv_publish(content_objects, DATASET_NAME, DATASET_TABLE, single_file=True)
+    
+    # --- generate PII report ---
+    create_pii_report(
+        OUT_BASE,
+        DATASET_NAME,
+        DATASET_TABLE,
+        dropped_columns,
+        redaction_stats,
+        total_records
+    )
 
 
 if __name__ == "__main__":
