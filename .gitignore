@@ -33,3 +33,6 @@ deidentification-output/**
 # Python bytecode caches
 __pycache__/
 *.py[cod]
+
+# Virtual environment
+.venv/

@@ -1,0 +1,37 @@
+from pyspark.sql.types import (
+    StructType, StructField, IntegerType, StringType, BooleanType, TimestampType
+)
+
+role_details_schema = StructType([
+    StructField("org_unit_id", IntegerType(), False),
+    StructField("role_id", IntegerType(), False),
+    StructField("role_name", StringType(), False),
+    StructField("description", StringType(), True),
+    StructField("is_cascading", BooleanType(), False),
+    StructField("in_class_list", BooleanType(), False),
+    StructField("class_list_role_name", StringType(), True),
+    StructField("class_list_show_groups", BooleanType(), False),
+    StructField("class_list_show_sections", BooleanType(), False),
+    StructField("class_list_display_role", BooleanType(), False),
+    StructField("access_inactive_co", BooleanType(), False),
+    StructField("has_special_access", BooleanType(), False),
+    StructField("add_to_course_offering_groups", BooleanType(), False),
+    StructField("can_be_auto_enrolled_into_groups", BooleanType(), False),
+    StructField("add_to_course_offering_sections", BooleanType(), False),
+    StructField("can_be_auto_enrolled_into_sections", BooleanType(), False),
+    StructField("access_past_courses", BooleanType(), False),
+    StructField("access_future_courses", BooleanType(), False),
+    StructField("sort_order", IntegerType(), False),
+    StructField("show_in_content", BooleanType(), False),
+    StructField("show_in_discussion_assess", BooleanType(), False),
+    StructField("show_in_discussion_stats", BooleanType(), False),
+    StructField("show_in_grades", BooleanType(), False),
+    StructField("show_in_attendance", BooleanType(), False),
+    StructField("allow_self_enroll_in_groups", BooleanType(), False),
+    StructField("show_in_registration", BooleanType(), False),
+    StructField("show_in_user_progress", BooleanType(), False),
+    StructField("role_alias", StringType(), True),
+    StructField("role_code", StringType(), True),
+    StructField("last_modified_date", TimestampType(), True),
+    StructField("deleted_by", IntegerType(), True),
+])
