@@ -72,7 +72,7 @@ def main(input_base: str, output_base: str) -> None:
 
     # Add flag indicating presence of a quiz description
     quizzes = quizzes.withColumn(
-        "contains_quiz_description",
+        "has_quiz_description",
         (col("quiz_description").isNotNull()) & (col("quiz_description") != "")
     )
 
