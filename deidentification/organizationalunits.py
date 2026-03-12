@@ -61,12 +61,11 @@ def main(input_base: str, output_base: str) -> None:
     dropped_columns = []  # No columns dropped for organizationalunits
     
     # Redact PII fields instead of dropping rows
-    # Email-like text: something@something.tld (case-insensitive)
-    # Student-ID–style numbers: any standalone 7–9 digit number
     org_units, redaction_stats = redact_pii_fields(
         org_units,
         {
             "name": "[PII_REDACTED_NAME]",
+            "type": "[PII_REDACTED_TYPE]",
             "code": "[PII_REDACTED_CODE]",
             "organization": "[PII_REDACTED_ORGANIZATION]"
         },

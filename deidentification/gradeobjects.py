@@ -75,6 +75,9 @@ def main(input_base: str, output_base: str) -> None:
         grade_objects,
         {
             "name": "[PII_REDACTED_NAME]",
+            "type_name": "[PII_REDACTED_TYPE_NAME]",
+            "weight_distribution_type": "[PII_REDACTED_WEIGHT_DISTRIBUTION_TYPE]",
+            "tool_name": "[PII_REDACTED_TOOL_NAME]",
             "short_name": "[PII_REDACTED_SHORT_NAME]"
         },
         detection_func=lambda col_name: has_email_pattern(col_name) | has_student_id_pattern(col_name)

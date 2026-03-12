@@ -66,10 +66,6 @@ def main(input_base: str, output_base: str) -> None:
     dropped_columns = ["deleted_by"]
     role_details = role_details.drop(*dropped_columns)
 
-    # - Condition: RoleName, Description, ClassListRoleName, RoleAlias, or RoleCode contain personal names, student IDs, or other identifying text
-    #   Fields: RoleName, Description, ClassListRoleName, RoleAlias, RoleCode
-    #   Description: Free-text role metadata that could embed identifiers if roles are named after specific individuals.
-    
     # Redact PII fields instead of dropping rows
     role_details, redaction_stats = redact_pii_fields(
         role_details,

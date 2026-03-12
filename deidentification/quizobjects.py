@@ -70,21 +70,18 @@ def main(input_base: str, output_base: str) -> None:
     total_records = quizzes.count()
     
     # Track dropped columns
-    dropped_columns = ["notification_email", "created_by", "last_modified_by"]
+    dropped_columns = ["notification_email", "created_by", "last_modified_by", "quiz_description"]
     quizzes = quizzes.drop(*dropped_columns)
 
-    # - Condition: QuizName, QuizDescription, QuizCategory, or OverallScoreCalculation contain personal names, student IDs, or other identifying text
-    #   Fields: QuizName, QuizDescription, QuizCategory, OverallScoreCalculation
-    #   Description: Free-text metadata/instructions that can embed personal identifiers depending on authoring practices.
-    
     # Redact PII fields instead of dropping rows
     quizzes, redaction_stats = redact_pii_fields(
         quizzes,
         {
             "quiz_name": "[PII_REDACTED_QUIZ_NAME]",
-            "quiz_description": "[PII_REDACTED_QUIZ_DESCRIPTION]",
+            # "quiz_description": "[PII_REDACTED_QUIZ_DESCRIPTION]",
             "quiz_category": "[PII_REDACTED_QUIZ_CATEGORY]",
-            "overall_score_calculation": "[PII_REDACTED_OVERALL_SCORE_CALCULATION]"
+            "overall_score_calculation": "[PII_REDACTED_OVERALL_SCORE_CALCULATION]",
+            "deduction_percentage": "[PII_REDACTED_DEDUCTION_PERCENTAGE]"
         },
         detection_func=lambda col_name: has_email_pattern(col_name) | has_student_id_pattern(col_name)
     )
