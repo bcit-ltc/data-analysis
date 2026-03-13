@@ -118,6 +118,11 @@ def main(raw_base: str, out_base: str):
         "start_date",
         "end_date",
     ])
+    # Flag whether a discussion forum has a non-null, non-empty description
+    df = df.withColumn(
+        "has_description",
+        (F.col("description").isNotNull()) & (F.col("description") != "")
+    )
 
     # --- quality report ---
     print_quality_report(

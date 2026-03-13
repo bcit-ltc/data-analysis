@@ -134,6 +134,7 @@ def main(raw_base: str, out_base: str):
         "creation_date",
         "last_modified",
     ])
+    # Flag whether a quiz has a non-null, non-empty description
     df = df.withColumn(
         "has_quiz_description",
         (col("quiz_description").isNotNull()) & (col("quiz_description") != "")
