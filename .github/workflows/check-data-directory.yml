@@ -16,17 +16,25 @@ jobs:
       - name: Verify accidental data commits
         run: |
           if [ ! -d "data" ]; then
-            echo "OK: 'data' directory does not exist; no CSV data committed."
-            exit 0
+            echo "OK: 'data' directory does not exist; skipping CSV data check."
+          else
+            if find data -type f -name '*.csv' | grep -q .; then
+              echo "ERROR: CSV files detected in 'data' directory:"
+              find data -type f -name '*.csv'
+              echo
+              echo "Committing raw data files is not allowed."
+              echo "Please remove these files from the commit (e.g. 'git rm --cached <file>') or store them outside the repository."
+              exit 1
+            fi
+
+            echo "OK: no CSV files found in 'data' directory."
           fi
 
-          if find data -type f -name '*.csv' | grep -q .; then
-            echo "ERROR: CSV files detected in 'data' directory:"
-            find data -type f -name '*.csv'
+          if git ls-files | grep -q '^output/'; then
+            echo "ERROR: Tracked files detected in 'output' directory:"
+            git ls-files | grep '^output/'
             echo
-            echo "Committing raw data files is not allowed."
-            echo "Please remove these files from the commit (e.g. 'git rm --cached <file>') or store them outside the repository."
+            echo "The 'output' directory is for generated artifacts and must not be committed."
+            echo "Please remove these files from the commit (e.g. 'git rm --cached <file>')."
             exit 1
           fi
-
-          echo "OK: no CSV files found in 'data' directory."
