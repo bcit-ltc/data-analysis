@@ -1,7 +1,6 @@
 import sys
 
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col
 from schemas.quizobjects_schemas import quiz_objects_schema
 from common.pii_detection import has_email_pattern, has_student_id_pattern, redact_pii_fields
 from common.create_pii_report import create_pii_report
@@ -69,12 +68,6 @@ def main(input_base: str, output_base: str) -> None:
     quizzes = read_csv(f"{INPUT_BASE}/{DATASET_NAME}/{DATASET_TABLE}/data", quiz_objects_schema)
     
     total_records = quizzes.count()
-
-    # Add flag indicating presence of a quiz description
-    quizzes = quizzes.withColumn(
-        "has_quiz_description",
-        (col("quiz_description").isNotNull()) & (col("quiz_description") != "")
-    )
 
     # Track dropped columns
     dropped_columns = ["notification_email", "created_by", "last_modified_by", "quiz_description"]

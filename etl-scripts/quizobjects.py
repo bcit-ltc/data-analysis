@@ -1,6 +1,7 @@
 import sys
 
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import col
 from pyspark.sql.types import (
     StructType, StructField, IntegerType, StringType, BooleanType, TimestampType, LongType, DoubleType
 )
@@ -133,6 +134,10 @@ def main(raw_base: str, out_base: str):
         "creation_date",
         "last_modified",
     ])
+    df = df.withColumn(
+        "has_quiz_description",
+        (col("quiz_description").isNotNull()) & (col("quiz_description") != "")
+    )
     df = df.cache()
 
 
