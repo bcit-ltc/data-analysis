@@ -90,6 +90,10 @@ def main(raw_base: str, out_base: str):
         "deleted_date",
     ])
 
+    
+
+
+
     # --- quality report ---
     print_quality_report(
         df,

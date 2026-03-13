@@ -70,16 +70,16 @@ def main(input_base: str, output_base: str) -> None:
     total_records = quizzes.count()
 
     # Track dropped columns
-    dropped_columns = ["notification_email", "created_by", "last_modified_by", "quiz_description"]
+    dropped_columns = ["notification_email", "created_by", "last_modified_by", "quiz_description", "quiz_name", "quiz_category"]
     quizzes = quizzes.drop(*dropped_columns)
 
     # Redact PII fields instead of dropping rows
     quizzes, redaction_stats = redact_pii_fields(
         quizzes,
         {
-            "quiz_name": "[PII_REDACTED_QUIZ_NAME]",
+            # "quiz_name": "[PII_REDACTED_QUIZ_NAME]",
             # "quiz_description": "[PII_REDACTED_QUIZ_DESCRIPTION]",
-            "quiz_category": "[PII_REDACTED_QUIZ_CATEGORY]",
+            # "quiz_category": "[PII_REDACTED_QUIZ_CATEGORY]",
             "overall_score_calculation": "[PII_REDACTED_OVERALL_SCORE_CALCULATION]",
             "deduction_percentage": "[PII_REDACTED_DEDUCTION_PERCENTAGE]"
         },

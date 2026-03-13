@@ -63,14 +63,14 @@ def main(input_base: str, output_base: str) -> None:
     total_records = role_details.count()
     
     # Track dropped columns
-    dropped_columns = ["deleted_by"]
+    dropped_columns = ["deleted_by", "role_name"]
     role_details = role_details.drop(*dropped_columns)
 
     # Redact PII fields instead of dropping rows
     role_details, redaction_stats = redact_pii_fields(
         role_details,
         {
-            "role_name": "[PII_REDACTED_ROLE_NAME]",
+            # "role_name": "[PII_REDACTED_ROLE_NAME]",
             "description": "[PII_REDACTED_DESCRIPTION]",
             "class_list_role_name": "[PII_REDACTED_CLASS_LIST_ROLE_NAME]",
             "role_alias": "[PII_REDACTED_ROLE_ALIAS]",

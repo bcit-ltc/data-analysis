@@ -69,17 +69,17 @@ def main(input_base: str, output_base: str) -> None:
     total_records = content_objects.count()
     
     # Track dropped columns
-    dropped_columns = ["created_by", "last_modified_by", "deleted_by"]
+    dropped_columns = ["created_by", "last_modified_by", "deleted_by","title","location"]
     content_objects = content_objects.drop(*dropped_columns)
 
     # Redact PII fields instead of dropping rows
     content_objects, redaction_stats = redact_pii_fields(
         content_objects,
         {
-            "title": "[PII_REDACTED_TITLE]",
+            # "title": "[PII_REDACTED_TITLE]",
             "content_object_type": "[PII_REDACTED_CONTENT_OBJECT_TYPE]",
             "completion_type": "[PII_REDACTED_COMPLETION_TYPE]",
-            "location": "[PII_REDACTED_LOCATION]"
+            # "location": "[PII_REDACTED_LOCATION]"
         },
         detection_func=lambda col_name: has_email_pattern(col_name) | has_student_id_pattern(col_name)
     )
