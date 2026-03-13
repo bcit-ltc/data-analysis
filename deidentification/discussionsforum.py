@@ -63,7 +63,7 @@ def main(input_base: str, output_base: str) -> None:
     total_records = discussion_forums.count()
     
     # Track dropped columns
-    dropped_columns = ["deleted_by_user_id"]
+    dropped_columns = ["deleted_by_user_id", "description"]
     discussion_forums = discussion_forums.drop(*dropped_columns)
 
     # Redact PII fields instead of dropping rows
@@ -71,7 +71,7 @@ def main(input_base: str, output_base: str) -> None:
         discussion_forums,
         {
             "name": "[PII_REDACTED_NAME]",
-            "description": "[PII_REDACTED_DESCRIPTION]"
+            # "description": "[PII_REDACTED_DESCRIPTION]"
         },
         detection_func=lambda col_name: has_email_pattern(col_name) | has_student_id_pattern(col_name)
     )
