@@ -2,9 +2,7 @@ import sys
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql import Window
-from pyspark.sql.types import (
-    StructType, StructField, IntegerType, StringType, BooleanType, TimestampType, LongType
-)
+from pyspark.sql.types import StructType
 from common.structural_schema_profiling import print_structural_profile
 from common.standardization_canonicalization import (
     normalize_column_names,
@@ -15,39 +13,11 @@ from common.standardization_canonicalization import (
     standardize_datetimes_iso,
 )
 from common.quality_validation import print_quality_report
+from schemas.contentobjects_schemas import content_objects_schema
 
 
 DATASET_NAME = "contentdata"
 DATASET_TABLE = "contentobjects"
-
-# ---------- schemas ----------
-content_objects_schema = StructType([
-    StructField("ContentObjectId", IntegerType(), False),
-    StructField("OrgUnitId", IntegerType(), False),
-    StructField("Title", StringType(), False),
-    StructField("ContentObjectType", StringType(), False),
-    StructField("CompletionType", StringType(), False),
-    StructField("ParentContentObjectId", IntegerType(), False),
-    StructField("Location", StringType(), True),
-    StructField("StartDate", TimestampType(), True),
-    StructField("EndDate", TimestampType(), True),
-    StructField("DueDate", TimestampType(), True),
-    StructField("ObjectId1", IntegerType(), True),
-    StructField("ObjectId2", IntegerType(), True),
-    StructField("ObjectId3", IntegerType(), True),
-    StructField("LastModified", TimestampType(), False),
-    StructField("IsDeleted", BooleanType(), False),
-    StructField("SortOrder", IntegerType(), False),
-    StructField("Depth", IntegerType(), False),
-    StructField("ToolId", IntegerType(), True),
-    StructField("IsHidden", BooleanType(), False),
-    StructField("ResultId", IntegerType(), True),
-    StructField("DeletedDate", TimestampType(), True),
-    StructField("CreatedBy", IntegerType(), True),
-    StructField("LastModifiedBy", IntegerType(), True),
-    StructField("DeletedBy", IntegerType(), True),
-    StructField("AIUtilization", IntegerType(), False),
-])
 
 # ---------- helpers ----------
 def read_csv(path: str, schema: StructType):

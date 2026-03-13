@@ -1,8 +1,6 @@
 import sys
 from pyspark.sql import SparkSession
-from pyspark.sql.types import (
-    StructType, StructField, IntegerType, StringType, BooleanType, TimestampType, LongType
-)
+from pyspark.sql.types import StructType
 from common.structural_schema_profiling import print_structural_profile
 from common.standardization_canonicalization import (
     normalize_column_names,
@@ -11,26 +9,11 @@ from common.standardization_canonicalization import (
     standardize_datetimes_iso,
 )
 from common.quality_validation import print_quality_report
+from schemas.audiovideoprocessed_schemas import audio_video_processed_schema
 
 
 DATASET_NAME = "contentservice"
 DATASET_TABLE = "audiovideoprocessed"
-
-# ---------- schemas ----------
-audio_video_processed_schema = StructType([
-    StructField("ContentId", StringType(), False),
-    StructField("RevisionId", StringType(), True),
-    StructField("RevisionNumber", IntegerType(), True),
-    StructField("Type", StringType(), True),
-    StructField("Source", StringType(), True),
-    StructField("RevisionSize", LongType(), True),
-    StructField("Duration", IntegerType(), True),
-    StructField("RequiredTranscoding", BooleanType(), True),
-    StructField("RequiredTranscribing", BooleanType(), True),
-    StructField("LastModified", TimestampType(), True),
-    
-  
-])
 
 # ---------- helpers ----------
 def read_csv(path: str, schema: StructType):
