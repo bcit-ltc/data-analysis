@@ -98,7 +98,7 @@ def main(raw_base: str, out_base: str):
     # Standardize specific timestamp columns
     df = standardize_datetimes_iso(df, columns=["start_date", "end_date"])
 
-    # --- quality validation + scorecard (step 3) ---
+    # --- quality report ---
     print_quality_report(
         df,
         dataset_name=DATASET_NAME,
