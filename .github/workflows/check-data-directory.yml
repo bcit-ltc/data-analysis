@@ -1,0 +1,32 @@
+name: Detect accidental data commits
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  check-data-directory:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify accidental data commits
+        run: |
+          if [ ! -d "data" ]; then
+            echo "OK: 'data' directory does not exist; no CSV data committed."
+            exit 0
+          fi
+
+          if find data -type f -name '*.csv' | grep -q .; then
+            echo "ERROR: CSV files detected in 'data' directory:"
+            find data -type f -name '*.csv'
+            echo
+            echo "Committing raw data files is not allowed."
+            echo "Please remove these files from the commit (e.g. 'git rm --cached <file>') or store them outside the repository."
+            exit 1
+          fi
+
+          echo "OK: no CSV files found in 'data' directory."

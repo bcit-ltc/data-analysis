@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+# Prevent committing CSV data files under the data/ directory.
+# This hook checks the staged changes and blocks the commit if any
+# matching files are present.
+
+set -euo pipefail
+
+# Get list of staged files (Added, Copied, Modified, Renamed)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR || true)
+
+if [ -z "${STAGED_FILES}" ]; then
+  exit 0
+fi
+
+# Filter for CSV files under data/
+BLOCKED_FILES=$(printf '%s\n' "${STAGED_FILES}" | grep -E '^data/.*\.csv$' || true)
+
+if [ -n "${BLOCKED_FILES}" ]; then
+  echo "ERROR: CSV data files under 'data/' are staged for commit:"
+  printf '  %s\n' ${BLOCKED_FILES}
+  echo
+  echo "Committing raw data files is not allowed."
+  echo "Please remove these files from the commit (e.g. 'git reset HEAD <file>') or move them outside the repository."
+  exit 1
+fi
+
+exit 0
