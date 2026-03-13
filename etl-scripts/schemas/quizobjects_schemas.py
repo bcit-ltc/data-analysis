@@ -2,7 +2,9 @@ from pyspark.sql.types import (
     StructType, StructField, IntegerType, StringType, BooleanType, TimestampType, LongType, DoubleType
 )
 
-# Quiz Objects: https://community.d2l.com/brightspace/kb/articles/4532-quizzes-data-sets#quiz-objects
+# Quiz Objects dataset (Quizzes)
+# Docs: https://community.d2l.com/brightspace/kb/articles/4532-quizzes-data-sets
+# Schema fields mirror the Brightspace Quiz Objects data set columns; see docs for field descriptions.
 quiz_objects_schema = StructType([
     StructField("QuizId", LongType(), False),
     StructField("QuizName", StringType(), True),

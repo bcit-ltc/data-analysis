@@ -2,6 +2,9 @@ from pyspark.sql.types import (
     StructType, StructField, IntegerType, StringType, BooleanType, TimestampType, LongType, DoubleType
 )
 
+# Grade Objects dataset (Grades)
+# Docs: https://community.d2l.com/brightspace/kb/articles/4527-grades-data-sets
+# Schema fields mirror the Brightspace Grade Objects data set columns; see docs for field descriptions.
 grade_objects_schema = StructType([
     StructField("GradeObjectId", LongType(), False),
     StructField("OrgUnitId", LongType(), False),

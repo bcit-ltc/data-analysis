@@ -2,6 +2,9 @@ from pyspark.sql.types import (
     StructType, StructField, IntegerType, StringType, BooleanType, TimestampType, LongType
 )
 
+# Organizational Units dataset
+# Docs: https://community.d2l.com/brightspace/kb/articles/4529-organizational-units-data-sets
+# Schema fields mirror the Brightspace Organizational Units data set columns; see docs for field descriptions.
 org_units_schema = StructType([
     StructField("OrgUnitId", IntegerType(), False),
     StructField("Organization", StringType(), True),

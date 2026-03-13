@@ -2,6 +2,9 @@ from pyspark.sql.types import (
     StructType, StructField, IntegerType, StringType, BooleanType, LongType, TimestampType
 )
 
+# Role Details dataset
+# Docs: https://community.d2l.com/brightspace/kb/articles/4534-role-details-data-sets
+# Schema fields mirror the Brightspace Role Details data set columns; see docs for field descriptions.
 role_details_schema = StructType([
     StructField("OrgUnitId", IntegerType(), False),
     StructField("RoleId", IntegerType(), False),
