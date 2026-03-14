@@ -12,7 +12,7 @@ from common.standardization_canonicalization import (
     normalize_numeric_strings,
     standardize_datetimes_iso,
 )
-from common.quality_validation import print_quality_report
+from common.quality_validation import print_quality_report, filter_allowed_values
 from schemas.contentobjects_schemas import content_objects_schema
 
 
@@ -90,9 +90,24 @@ def main(raw_base: str, out_base: str):
         "deleted_date",
     ])
 
-    
+    # completion type should only have 4 possibilities:
+    # CompletionType        | Auto                                                                                    | 11709147 | 0.9915587728096302    
+    # CompletionType        | Manual                                                                                  | 8254     | 0.000698968602133929  
+    # CompletionType        | Topic                                                                                   | 943      | 7.985551148683002e-05 
+    # CompletionType        | Module   
+    allowed_completion_types = [
+        "Auto",
+        "Manual",
+        "Topic",
+        "Module",
+    ]
 
-
+    df, completion_filter_section = filter_allowed_values(
+        df,
+        column="completion_type",
+        allowed_values=allowed_completion_types,
+        label=f"{DATASET_NAME}.{DATASET_TABLE} completion_type allowed-values filter summary",
+    )
 
     # --- quality report ---
     print_quality_report(
@@ -106,6 +121,7 @@ def main(raw_base: str, out_base: str):
         ],
         table_name=DATASET_TABLE,
         output_base_dir=OUT_BASE,
+        extra_sections=[completion_filter_section],
     )
 
 

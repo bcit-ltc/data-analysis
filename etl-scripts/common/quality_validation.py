@@ -14,7 +14,7 @@ artifacts.
 """
 
 import os
-from typing import Iterable, List, Optional, Sequence
+from typing import Iterable, List, Optional, Sequence, Tuple
 
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
@@ -232,6 +232,44 @@ def _numeric_outlier_table(
     )
 
 
+def filter_allowed_values(
+    df: DataFrame,
+    column: str,
+    allowed_values: Sequence,
+    *,
+    label: Optional[str] = None,
+) -> Tuple[DataFrame, str]:
+    _validate_columns_exist(df, [column])
+
+    total_rows = df.count()
+    filtered_df = df.where(F.col(column).isin(*allowed_values))
+    kept_rows = filtered_df.count()
+    removed_rows = total_rows - kept_rows
+    removed_pct = (removed_rows / total_rows) if total_rows > 0 else None
+
+    rows = [
+        ("total_rows_before_filter", str(total_rows)),
+        ("rows_after_filter", str(kept_rows)),
+        ("rows_removed", str(removed_rows)),
+        (
+            "pct_rows_removed",
+            "" if removed_pct is None else str(removed_pct),
+        ),
+    ]
+
+    summary_df = df.sparkSession.createDataFrame(
+        rows,
+        schema="metric string, value string",
+    )
+
+    section_label = label or f"{column} allowed-values filter summary"
+    header = f"{section_label}:"
+    table_str = _format_spark_table(summary_df)
+    section_text = header + "\n" + table_str
+
+    return filtered_df, section_text
+
+
 def print_quality_report(
     df: DataFrame,
     dataset_name: str,
@@ -242,6 +280,7 @@ def print_quality_report(
     output_base_dir: Optional[str] = None,
     report_filename: str = "quality-report.txt",
     table_name: Optional[str] = None,
+    extra_sections: Optional[Sequence[str]] = None,
 ) -> None:
     """Print and optionally persist a small quality report for a dataset.
 
@@ -297,6 +336,13 @@ def print_quality_report(
         print(out_header)
         print(out_table)
         sections.append(out_header + "\n" + out_table)
+
+    if extra_sections:
+        for section in extra_sections:
+            if not section:
+                continue
+            print(section)
+            sections.append(section)
 
     # Persist report to disk if requested.
     if output_base_dir is not None and sections:
