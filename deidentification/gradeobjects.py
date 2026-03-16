@@ -63,7 +63,7 @@ def main(input_base: str, output_base: str) -> None:
     total_records = grade_objects.count()
     
     # Track dropped columns
-    dropped_columns = ["deleted_by_user_id"]
+    dropped_columns = ["deleted_by_user_id", "name", "short_name"]
     grade_objects = grade_objects.drop(*dropped_columns)
 
     # - Condition: Name or ShortName contains personal names, student IDs, or other identifying text
@@ -74,8 +74,11 @@ def main(input_base: str, output_base: str) -> None:
     grade_objects, redaction_stats = redact_pii_fields(
         grade_objects,
         {
-            "name": "[PII_REDACTED_NAME]",
-            "short_name": "[PII_REDACTED_SHORT_NAME]"
+            # "name": "[PII_REDACTED_NAME]",
+            "type_name": "[PII_REDACTED_TYPE_NAME]",
+            "weight_distribution_type": "[PII_REDACTED_WEIGHT_DISTRIBUTION_TYPE]",
+            "tool_name": "[PII_REDACTED_TOOL_NAME]",
+            # "short_name": "[PII_REDACTED_SHORT_NAME]"
         },
         detection_func=lambda col_name: has_email_pattern(col_name) | has_student_id_pattern(col_name)
     )

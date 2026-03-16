@@ -20,4 +20,5 @@ discussion_forums_schema = StructType([
     StructField("start_date_availability_type", IntegerType(), True),
     StructField("end_date", TimestampType(), True),
     StructField("end_date_availability_type", IntegerType(), True),
+    StructField("has_description", BooleanType(), True),
 ])

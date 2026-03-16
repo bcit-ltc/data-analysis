@@ -1,8 +1,6 @@
 import sys
 from pyspark.sql import SparkSession
-from pyspark.sql.types import (
-    StructType, StructField, IntegerType, StringType, BooleanType, LongType
-)
+from pyspark.sql.types import StructType
 from common.structural_schema_profiling import print_structural_profile
 from common.standardization_canonicalization import (
     normalize_column_names,
@@ -10,28 +8,11 @@ from common.standardization_canonicalization import (
     trim_whitespace,
 )
 from common.quality_validation import print_quality_report
+from schemas.releaseconditionsobjects_schemas import release_conditions_objects_schema
 
 
 DATASET_NAME = "releaseconditions"
 DATASET_TABLE = "releaseconditionsobjects"
-
-# ---------- schemas ----------
-release_conditions_objects_schema = StructType([
-    StructField("PreRequisiteId", LongType(), False),
-    StructField("ResultId", LongType(), False),
-    StructField("OrgUnitId", LongType(), False),
-    StructField("Name", StringType(), True),
-    StructField("IsNegativeCondition", BooleanType(), True),
-    StructField("PreRequisiteToolId", IntegerType(), True),
-    StructField("Id1", LongType(), True),
-    StructField("Id2", LongType(), True),
-    StructField("ResultToolId", IntegerType(), True),
-    StructField("UsesPercentage", BooleanType(), True),
-    StructField("OperatorTypeDesc", StringType(), True),
-    StructField("Version", LongType(), True),
-    StructField("Guid1", StringType(), True),
-    StructField("Guid2", StringType(), True),
-])
 
 # ---------- helpers ----------
 def read_csv(path: str, schema: StructType):
@@ -94,7 +75,7 @@ def main(raw_base: str, out_base: str):
     # Trim whitespace in all string columns
     df = trim_whitespace(df)
 
-    # --- quality validation + scorecard (step 3) ---
+    # --- quality report ---
     print_quality_report(
         df,
         dataset_name=DATASET_NAME,

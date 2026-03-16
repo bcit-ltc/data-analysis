@@ -14,14 +14,14 @@ COMMON="/opt/spark/bin/spark-submit --master spark://spark-master:7077"
 
 # ======== ETL scripts
 
-# $COMMON etl-scripts/audiovideoprocessed.py data etl-output
-# $COMMON etl-scripts/contentobjects.py data etl-output
-# $COMMON etl-scripts/discussionsforum.py data etl-output
-# $COMMON etl-scripts/gradeobjects.py data etl-output
-# $COMMON etl-scripts/organizationalunits.py data etl-output
-# $COMMON etl-scripts/quizobjects.py data etl-output
-# $COMMON etl-scripts/releaseconditionsobjects.py data etl-output
-# $COMMON etl-scripts/roledetails.py data etl-output
+$COMMON etl-scripts/audiovideoprocessed.py data etl-output
+$COMMON etl-scripts/contentobjects.py data etl-output
+$COMMON etl-scripts/discussionsforum.py data etl-output
+$COMMON etl-scripts/gradeobjects.py data etl-output
+$COMMON etl-scripts/organizationalunits.py data etl-output
+$COMMON etl-scripts/quizobjects.py data etl-output
+$COMMON etl-scripts/releaseconditionsobjects.py data etl-output
+$COMMON etl-scripts/roledetails.py data etl-output
 
 # ======== De-Identification and final csv
 

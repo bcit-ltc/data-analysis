@@ -69,28 +69,20 @@ def main(input_base: str, output_base: str) -> None:
     total_records = content_objects.count()
     
     # Track dropped columns
-    dropped_columns = ["created_by", "last_modified_by", "deleted_by"]
+    dropped_columns = ["created_by", "last_modified_by", "deleted_by","title","location"]
     content_objects = content_objects.drop(*dropped_columns)
 
-    # check the Title, Location columns and create logic :
-    # - Condition: Title or Location contains personal names, student IDs, or other identifying text
-    #   Fields: Title, Location
-    #   Description: Free-text metadata that may embed names, IDs, or other identifiers depending on how instructors author content.
-
     # Redact PII fields instead of dropping rows
-    # Email-like text in title or location
-    # Pattern: something@something.tld (case-insensitive)
-    # Student-ID pattern in title or location
-    # Pattern: A followed by 8 digits (e.g., A00123456)
     content_objects, redaction_stats = redact_pii_fields(
         content_objects,
         {
-            "title": "[PII_REDACTED_TITLE]",
-            "location": "[PII_REDACTED_LOCATION]"
+            # "title": "[PII_REDACTED_TITLE]",
+            "content_object_type": "[PII_REDACTED_CONTENT_OBJECT_TYPE]",
+            "completion_type": "[PII_REDACTED_COMPLETION_TYPE]",
+            # "location": "[PII_REDACTED_LOCATION]"
         },
         detection_func=lambda col_name: has_email_pattern(col_name) | has_student_id_pattern(col_name)
     )
-    # content_objects.show(20, truncate=False)
 
     # --- publish dataset ---
     write_csv_publish(content_objects, DATASET_NAME, DATASET_TABLE, single_file=True)

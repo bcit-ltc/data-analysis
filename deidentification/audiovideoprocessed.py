@@ -2,6 +2,8 @@ import sys
 
 from pyspark.sql import SparkSession
 from schemas.audiovideoprocessed_schemas import audio_video_processed_schema
+from common.pii_detection import has_email_pattern, has_student_id_pattern, redact_pii_fields
+from common.create_pii_report import create_pii_report
 from pyspark.sql.types import (
     StructType, StructField, IntegerType, StringType, BooleanType, TimestampType, LongType
 )
@@ -55,10 +57,36 @@ def main(input_base: str, output_base: str) -> None:
     # --- Load your dataset here
     audio_video = read_csv(f"{INPUT_BASE}/{DATASET_NAME}/{DATASET_TABLE}/data", audio_video_processed_schema)
     
-    # No direct PII columns to drop (PII risk only when joined with user tables)
+    total_records = audio_video.count()
+
+    # Track dropped columns
+    dropped_columns = []
+    audio_video = audio_video.drop(*dropped_columns)
+
+    # Redact PII fields instead of dropping rows
+    audio_video, redaction_stats = redact_pii_fields(
+        audio_video,
+        {
+            "content_id": "[PII_REDACTED_CONTENT_ID]",
+            "revision_id": "[PII_REDACTED_REVISION_ID]",
+            "type": "[PII_REDACTED_TYPE]",
+            "source": "[PII_REDACTED_SOURCE]"
+        },
+        detection_func=lambda col_name: has_email_pattern(col_name) | has_student_id_pattern(col_name)
+    )
 
     # --- publish dataset ---
     write_csv_publish(audio_video, DATASET_NAME, DATASET_TABLE, single_file=True)
+    
+    # --- generate PII report ---
+    create_pii_report(
+        OUT_BASE,
+        DATASET_NAME,
+        DATASET_TABLE,
+        dropped_columns,
+        redaction_stats,
+        total_records
+    )
 
 
 if __name__ == "__main__":

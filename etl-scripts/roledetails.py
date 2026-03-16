@@ -1,8 +1,6 @@
 import sys
 from pyspark.sql import SparkSession
-from pyspark.sql.types import (
-    StructType, StructField, IntegerType, StringType, BooleanType, LongType, TimestampType
-)
+from pyspark.sql.types import StructType
 from common.structural_schema_profiling import print_structural_profile
 from common.standardization_canonicalization import (
     normalize_column_names,
@@ -10,45 +8,10 @@ from common.standardization_canonicalization import (
     trim_whitespace,
 )
 from common.quality_validation import print_quality_report
+from schemas.roledetails_schemas import role_details_schema
 
 DATASET_NAME = "roledetails"
 DATASET_TABLE = "roledetails"
-
-# ---------- schemas ----------
-role_details_schema = StructType([
-    StructField("OrgUnitId", IntegerType(), False),
-    StructField("RoleId", IntegerType(), False),
-    StructField("RoleName", StringType(), False),
-    StructField("Description", StringType(), True),
-    StructField("IsCascading", BooleanType(), False),
-    StructField("InClassList", BooleanType(), False),
-    StructField("ClassListRoleName", StringType(), True),
-    StructField("ClassListShowGroups", BooleanType(), False),
-    StructField("ClassListShowSections", BooleanType(), False),
-    StructField("ClassListDisplayRole", BooleanType(), False),
-    StructField("AccessInactiveCO", BooleanType(), False),
-    StructField("HasSpecialAccess", BooleanType(), False),
-    StructField("AddToCourseOfferingGroups", BooleanType(), False),
-    StructField("CanBeAutoEnrolledIntoGroups", BooleanType(), False),
-    StructField("AddToCourseOfferingSections", BooleanType(), False),
-    StructField("CanBeAutoEnrolledIntoSections", BooleanType(), False),
-    StructField("AccessPastCourses", BooleanType(), False),
-    StructField("AccessFutureCourses", BooleanType(), False),
-    StructField("SortOrder", IntegerType(), False),
-    StructField("ShowInContent", BooleanType(), False),
-    StructField("ShowInDiscussionAssess", BooleanType(), False),
-    StructField("ShowInDiscussionStats", BooleanType(), False),
-    StructField("ShowInGrades", BooleanType(), False),
-    StructField("ShowInAttendance", BooleanType(), False),
-    StructField("AllowSelfEnrollInGroups", BooleanType(), False),
-    StructField("ShowInRegistration", BooleanType(), False),
-    StructField("ShowInUserProgress", BooleanType(), False),
-    StructField("RoleAlias", StringType(), True),
-    StructField("RoleCode", StringType(), True),
-    StructField("LastModifiedDate", TimestampType(), True),
-    StructField("DeletedBy", IntegerType(), True),
-])
-
 
 # ---------- helpers ----------
 def read_csv(path: str, schema: StructType):
@@ -112,7 +75,7 @@ def main(raw_base: str, out_base: str):
     # Trim whitespace in all string columns
     df = trim_whitespace(df)
 
-    # --- quality validation + scorecard (step 3) ---
+    # --- quality report ---
     print_quality_report(
         df,
         dataset_name=DATASET_NAME,

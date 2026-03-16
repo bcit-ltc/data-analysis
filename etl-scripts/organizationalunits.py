@@ -2,9 +2,7 @@ import sys
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql import Window
-from pyspark.sql.types import (
-    StructType, StructField, IntegerType, StringType, BooleanType, TimestampType, LongType
-)
+from pyspark.sql.types import StructType
 from common.structural_schema_profiling import print_structural_profile
 from common.standardization_canonicalization import (
     normalize_column_names,
@@ -15,28 +13,11 @@ from common.standardization_canonicalization import (
     standardize_datetimes_iso,
 )
 from common.quality_validation import print_quality_report
+from schemas.organizationalunits_schemas import org_units_schema
 
 
 DATASET_NAME = "organizationalunits"
 DATASET_TABLE = "organizationalunits"
-
-# ---------- schemas ----------
-org_units_schema = StructType([
-    StructField("OrgUnitId", IntegerType(), False),
-    StructField("Organization", StringType(), True),
-    StructField("Type", StringType(), True),
-    StructField("Name", StringType(), True),
-    StructField("Code", StringType(), True),
-    StructField("StartDate", TimestampType(), True),
-    StructField("EndDate", TimestampType(), True),
-    StructField("IsActive", BooleanType(), True),
-    StructField("CreatedDate", TimestampType(), True),
-    StructField("IsDeleted", BooleanType(), True),
-    StructField("DeletedDate", TimestampType(), True),
-    StructField("RecycledDate", TimestampType(), True),
-    StructField("Version", LongType(), True),
-    StructField("OrgUnitTypeId", IntegerType(), True),
-])
 
 # ---------- helpers ----------
 def read_csv(path: str, schema: StructType):
@@ -98,7 +79,7 @@ def main(raw_base: str, out_base: str):
     # Standardize specific timestamp columns
     df = standardize_datetimes_iso(df, columns=["start_date", "end_date"])
 
-    # --- quality validation + scorecard (step 3) ---
+    # --- quality report ---
     print_quality_report(
         df,
         dataset_name=DATASET_NAME,

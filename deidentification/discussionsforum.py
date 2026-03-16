@@ -63,29 +63,15 @@ def main(input_base: str, output_base: str) -> None:
     total_records = discussion_forums.count()
     
     # Track dropped columns
-    dropped_columns = ["deleted_by_user_id"]
+    dropped_columns = ["deleted_by_user_id", "description", "name"]
     discussion_forums = discussion_forums.drop(*dropped_columns)
 
-    # - Condition: Name or Description contains personal names, student IDs, or other identifying text
-    #   Fields: Name, Description
-    #   Description: Forum titles and descriptions that may reference individuals if authored that way.
-    
-    # Filter for PII in name or description fields
-    # Email-like text: something@something.tld (case-insensitive)
-    # Student-ID–style numbers: any standalone 7–9 digit number
-    # pii_discussion_forums = discussion_forums.filter(
-    #     has_email_pattern("name", "description")
-    #     # | has_student_id_pattern("name", "description")
-    # )
-
-    # pii_discussion_forums.show(20, truncate=False)
-    
     # Redact PII fields instead of dropping rows
     discussion_forums, redaction_stats = redact_pii_fields(
         discussion_forums,
         {
-            "name": "[PII_REDACTED_NAME]",
-            "description": "[PII_REDACTED_DESCRIPTION]"
+            # "name": "[PII_REDACTED_NAME]",
+            # "description": "[PII_REDACTED_DESCRIPTION]"
         },
         detection_func=lambda col_name: has_email_pattern(col_name) | has_student_id_pattern(col_name)
     )

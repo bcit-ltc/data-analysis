@@ -1,9 +1,8 @@
 import sys
 
 from pyspark.sql import SparkSession
-from pyspark.sql.types import (
-    StructType, StructField, IntegerType, StringType, BooleanType, TimestampType, LongType, DoubleType
-)
+from pyspark.sql.functions import col
+from pyspark.sql.types import StructType
 from common.structural_schema_profiling import print_structural_profile
 from common.standardization_canonicalization import (
     normalize_column_names,
@@ -13,51 +12,11 @@ from common.standardization_canonicalization import (
 )
 from common.quality_validation import print_quality_report
 
+from schemas.quizobjects_schemas import quiz_objects_schema
+
 
 DATASET_NAME = "quizzes"
 DATASET_TABLE = "quizobjects"
-
-# ---------- schemas ----------
-# Quiz Objects: https://community.d2l.com/brightspace/kb/articles/4532-quizzes-data-sets#quiz-objects
-quiz_objects_schema = StructType([
-    StructField("QuizId", LongType(), False),
-    StructField("QuizName", StringType(), True),
-    StructField("QuizDescription", StringType(), True),
-    StructField("QuizCategory", StringType(), True),
-    StructField("IsActive", BooleanType(), True),
-    StructField("OrgUnitId", LongType(), False),
-    StructField("StartDate", TimestampType(), True),
-    StructField("EndDate", TimestampType(), True),
-    StructField("DueDate", TimestampType(), True),
-    StructField("CreationDate", TimestampType(), True),
-    StructField("CreatedBy", LongType(), True),
-    StructField("LastModified", TimestampType(), True),
-    StructField("LastModifiedBy", LongType(), True),
-    StructField("GradeObjectId", LongType(), True),
-    StructField("OverallScoreCalculation", StringType(), True),
-    StructField("QuizScoreDenominator", DoubleType(), True),
-    StructField("HasPassword", BooleanType(), True),
-    StructField("IPRestricted", BooleanType(), True),
-    StructField("TimeLimit", IntegerType(), True),
-    StructField("TimeLimitEnforced", BooleanType(), True),
-    StructField("AttemptsAllowed", IntegerType(), True),
-    StructField("PreventMovingBackwards", BooleanType(), True),
-    StructField("AllowHints", BooleanType(), True),
-    StructField("NotificationEmail", StringType(), True),
-    StructField("DisablePagerAccess", BooleanType(), True),
-    StructField("DisplayInCalendar", BooleanType(), True),
-    StructField("IsAttemptRldb", BooleanType(), True),
-    StructField("IsSubviewRldb", BooleanType(), True),
-    StructField("SortOrder", IntegerType(), True),
-    StructField("CategoryId", LongType(), True),
-    StructField("ResultId", LongType(), True),
-    StructField("IsRetakeIncorrectOnly", BooleanType(), True),
-    StructField("PagingTypeId", IntegerType(), True),
-    StructField("IsSynchronous", BooleanType(), True),
-    StructField("DeductionPercentage", StringType(), True),
-    StructField("AIStudySupport", BooleanType(), True),
-    StructField("HideQuestionPoints", BooleanType(), True),
-])
 
 # ---------- helpers ----------
 def read_csv(path: str, schema: StructType):
@@ -133,9 +92,16 @@ def main(raw_base: str, out_base: str):
         "creation_date",
         "last_modified",
     ])
+    # Flag whether a quiz has a non-null, non-empty description
+    df = df.withColumn(
+        "has_quiz_description",
+        (col("quiz_description").isNotNull()) & (col("quiz_description") != "")
+    )
     df = df.cache()
 
-    # --- quality validation + scorecard (step 3) ---
+
+
+    # --- quality report ---
     print_quality_report(
         df,
         dataset_name=DATASET_NAME,

@@ -58,16 +58,17 @@ def main(input_base: str, output_base: str) -> None:
     org_units = read_csv(f"{INPUT_BASE}/{DATASET_NAME}/{DATASET_TABLE}/data", org_units_schema)
     
     total_records = org_units.count()
-    dropped_columns = []  # No columns dropped for organizationalunits
+    
+    dropped_columns = ["name", "code"] 
+    org_units = org_units.drop(*dropped_columns)
     
     # Redact PII fields instead of dropping rows
-    # Email-like text: something@something.tld (case-insensitive)
-    # Student-ID–style numbers: any standalone 7–9 digit number
     org_units, redaction_stats = redact_pii_fields(
         org_units,
         {
-            "name": "[PII_REDACTED_NAME]",
-            "code": "[PII_REDACTED_CODE]",
+            # "name": "[PII_REDACTED_NAME]",
+            "type": "[PII_REDACTED_TYPE]",
+            # "code": "[PII_REDACTED_CODE]",
             "organization": "[PII_REDACTED_ORGANIZATION]"
         },
         detection_func=lambda col_name: has_email_pattern(col_name) | has_student_id_pattern(col_name)

@@ -3,9 +3,7 @@ from pathlib import Path
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from pyspark.sql.types import (
-    StructType, StructField, IntegerType, StringType, BooleanType, TimestampType, LongType
-)
+from pyspark.sql.types import StructType
 from common.structural_schema_profiling import print_structural_profile
 from common.standardization_canonicalization import (
     normalize_column_names,
@@ -14,35 +12,11 @@ from common.standardization_canonicalization import (
     standardize_datetimes_iso,
 )
 from common.quality_validation import print_quality_report
+from schemas.discussionsforum_schemas import discussion_forums_schema
 
 
 DATASET_NAME = "discussions"
 DATASET_TABLE = "discussionforums"
-
-# ---------- schemas ----------
-# Discussion Forums: https://community.d2l.com/brightspace/kb/articles/4525-discussions-data-sets#discussion-forums
-# Types per KB: OrgUnitId int; ForumId bigint; Name nvarchar(400); Description nvarchar(1000);
-# MustPostToParticipate, AllowAnon, IsHidden, RequiresApproval, IsDeleted bit; SortOrder int;
-# DeletedDate, StartDate, EndDate datetime2; DeletedByUserId, ResultId int; StartDateAvailabilityType, EndDateAvailabilityType smallint
-discussion_forums_schema = StructType([
-    StructField("OrgUnitId", IntegerType(), False),
-    StructField("ForumId", LongType(), False),
-    StructField("Name", StringType(), True),
-    StructField("Description", StringType(), True),
-    StructField("MustPostToParticipate", BooleanType(), True),
-    StructField("AllowAnon", BooleanType(), True),
-    StructField("IsHidden", BooleanType(), True),
-    StructField("RequiresApproval", BooleanType(), True),
-    StructField("SortOrder", IntegerType(), True),
-    StructField("IsDeleted", BooleanType(), True),
-    StructField("DeletedDate", TimestampType(), True),
-    StructField("DeletedByUserId", IntegerType(), True),
-    StructField("ResultId", IntegerType(), True),
-    StructField("StartDate", TimestampType(), True),
-    StructField("StartDateAvailabilityType", IntegerType(), True),
-    StructField("EndDate", TimestampType(), True),
-    StructField("EndDateAvailabilityType", IntegerType(), True),
-])
 
 # ---------- helpers ----------
 def read_csv(path: str, schema: StructType):
@@ -118,8 +92,13 @@ def main(raw_base: str, out_base: str):
         "start_date",
         "end_date",
     ])
+    # Flag whether a discussion forum has a non-null, non-empty description
+    df = df.withColumn(
+        "has_description",
+        (F.col("description").isNotNull()) & (F.col("description") != "")
+    )
 
-    # --- quality validation + scorecard (step 3) ---
+    # --- quality report ---
     print_quality_report(
         df,
         dataset_name=DATASET_NAME,

@@ -1,8 +1,6 @@
 import sys
 from pyspark.sql import SparkSession
-from pyspark.sql.types import (
-    StructType, StructField, IntegerType, StringType, BooleanType, TimestampType, LongType, DoubleType
-)
+from pyspark.sql.types import StructType
 from common.structural_schema_profiling import print_structural_profile
 from common.standardization_canonicalization import (
     normalize_column_names,
@@ -11,45 +9,11 @@ from common.standardization_canonicalization import (
     standardize_datetimes_iso,
 )
 from common.quality_validation import print_quality_report
+from schemas.gradeobjects_schemas import grade_objects_schema
 
 
 DATASET_NAME = "grades"
 DATASET_TABLE = "gradeobjects"
-
-# ---------- schemas ----------
-grade_objects_schema = StructType([
-    StructField("GradeObjectId", LongType(), False),
-    StructField("OrgUnitId", LongType(), False),
-    StructField("ParentGradeObjectId", LongType(), True),
-    StructField("Name", StringType(), True),
-    StructField("TypeName", StringType(), True),
-    StructField("StartDate", TimestampType(), True),
-    StructField("EndDate", TimestampType(), True),
-    StructField("IsAutoPointed", BooleanType(), True),
-    StructField("IsFormula", BooleanType(), True),
-    StructField("IsBonus", BooleanType(), True),
-    StructField("MaxPoints", DoubleType(), True),
-    StructField("CanExceedMaxGrade", BooleanType(), True),
-    StructField("ExcludeFromFinalGradeCalc", BooleanType(), True),
-    StructField("GradeSchemeId", LongType(), True),
-    StructField("Weight", DoubleType(), True),
-    StructField("NumLowestGradesToDrop", IntegerType(), True),
-    StructField("NumHighestGradesToDrop", IntegerType(), True),
-    StructField("WeightDistributionType", StringType(), True),
-    StructField("CreatedDate", TimestampType(), True),
-    StructField("ToolName", StringType(), True),
-    StructField("AssociatedToolItemId", LongType(), True),
-    StructField("LastModified", TimestampType(), True),
-    StructField("ShortName", StringType(), True),
-    StructField("GradeObjectTypeId", IntegerType(), True),
-    StructField("SortOrder", IntegerType(), True),
-    StructField("IsDeleted", BooleanType(), True),
-    StructField("DeletedDate", TimestampType(), True),
-    StructField("DeletedByUserId", LongType(), True),
-    StructField("ResultId", LongType(), True),
-    StructField("ToolId", IntegerType(), True),
-    StructField("Version", LongType(), True),
-])
 
 # ---------- helpers ----------
 def read_csv(path: str, schema: StructType):
@@ -126,7 +90,7 @@ def main(raw_base: str, out_base: str):
         "deleted_date",
     ])
 
-    # --- quality validation + scorecard (step 3) ---
+    # --- quality report ---
     print_quality_report(
         df,
         dataset_name=DATASET_NAME,

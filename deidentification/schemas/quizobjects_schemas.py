@@ -40,4 +40,5 @@ quiz_objects_schema = StructType([
     StructField("deduction_percentage", StringType(), True),
     StructField("ai_study_support", BooleanType(), True),
     StructField("hide_question_points", BooleanType(), True),
+    StructField("has_quiz_description", BooleanType(), True),
 ])

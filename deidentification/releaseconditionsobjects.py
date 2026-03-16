@@ -2,6 +2,8 @@ import sys
 
 from pyspark.sql import SparkSession
 from schemas.releaseconditionsobjects_schemas import release_conditions_objects_schema
+from common.pii_detection import has_email_pattern, has_student_id_pattern, redact_pii_fields
+from common.create_pii_report import create_pii_report
 from pyspark.sql.types import (
     StructType, StructField, IntegerType, StringType, BooleanType, LongType
 )
@@ -55,11 +57,36 @@ def main(input_base: str, output_base: str) -> None:
     # --- Load your dataset here
     release_conditions = read_csv(f"{INPUT_BASE}/{DATASET_NAME}/{DATASET_TABLE}/data", release_conditions_objects_schema)
     
-    # No specific PII columns identified to drop
+    total_records = release_conditions.count()
+
+    # Track dropped columns
+    dropped_columns = []
+    release_conditions = release_conditions.drop(*dropped_columns)
+
+    # Redact PII fields instead of dropping rows
+    release_conditions, redaction_stats = redact_pii_fields(
+        release_conditions,
+        {
+            "name": "[PII_REDACTED_NAME]",
+            "operator_type_desc": "[PII_REDACTED_OPERATOR_TYPE_DESC]",
+            "guid_1": "[PII_REDACTED_GUID_1]",
+            "guid_2": "[PII_REDACTED_GUID_2]"
+        },
+        detection_func=lambda col_name: has_email_pattern(col_name) | has_student_id_pattern(col_name)
+    )
 
     # --- publish dataset ---
     write_csv_publish(release_conditions, DATASET_NAME, DATASET_TABLE, single_file=True)
 
+    # --- generate PII report ---
+    create_pii_report(
+        OUT_BASE,
+        DATASET_NAME,
+        DATASET_TABLE,
+        dropped_columns,
+        redaction_stats,
+        total_records
+    )
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:

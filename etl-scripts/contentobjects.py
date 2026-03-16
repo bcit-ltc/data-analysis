@@ -2,9 +2,7 @@ import sys
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql import Window
-from pyspark.sql.types import (
-    StructType, StructField, IntegerType, StringType, BooleanType, TimestampType, LongType
-)
+from pyspark.sql.types import StructType
 from common.structural_schema_profiling import print_structural_profile
 from common.standardization_canonicalization import (
     normalize_column_names,
@@ -14,40 +12,12 @@ from common.standardization_canonicalization import (
     normalize_numeric_strings,
     standardize_datetimes_iso,
 )
-from common.quality_validation import print_quality_report
+from common.quality_validation import print_quality_report, filter_allowed_values
+from schemas.contentobjects_schemas import content_objects_schema
 
 
 DATASET_NAME = "contentdata"
 DATASET_TABLE = "contentobjects"
-
-# ---------- schemas ----------
-content_objects_schema = StructType([
-    StructField("ContentObjectId", IntegerType(), False),
-    StructField("OrgUnitId", IntegerType(), False),
-    StructField("Title", StringType(), False),
-    StructField("ContentObjectType", StringType(), False),
-    StructField("CompletionType", StringType(), False),
-    StructField("ParentContentObjectId", IntegerType(), False),
-    StructField("Location", StringType(), True),
-    StructField("StartDate", TimestampType(), True),
-    StructField("EndDate", TimestampType(), True),
-    StructField("DueDate", TimestampType(), True),
-    StructField("ObjectId1", IntegerType(), True),
-    StructField("ObjectId2", IntegerType(), True),
-    StructField("ObjectId3", IntegerType(), True),
-    StructField("LastModified", TimestampType(), False),
-    StructField("IsDeleted", BooleanType(), False),
-    StructField("SortOrder", IntegerType(), False),
-    StructField("Depth", IntegerType(), False),
-    StructField("ToolId", IntegerType(), True),
-    StructField("IsHidden", BooleanType(), False),
-    StructField("ResultId", IntegerType(), True),
-    StructField("DeletedDate", TimestampType(), True),
-    StructField("CreatedBy", IntegerType(), True),
-    StructField("LastModifiedBy", IntegerType(), True),
-    StructField("DeletedBy", IntegerType(), True),
-    StructField("AIUtilization", IntegerType(), False),
-])
 
 # ---------- helpers ----------
 def read_csv(path: str, schema: StructType):
@@ -120,7 +90,26 @@ def main(raw_base: str, out_base: str):
         "deleted_date",
     ])
 
-    # --- quality validation + scorecard (step 3) ---
+    # completion type should only have 4 possibilities:
+    # CompletionType        | Auto                                                                                    | 11709147 | 0.9915587728096302    
+    # CompletionType        | Manual                                                                                  | 8254     | 0.000698968602133929  
+    # CompletionType        | Topic                                                                                   | 943      | 7.985551148683002e-05 
+    # CompletionType        | Module   
+    allowed_completion_types = [
+        "Auto",
+        "Manual",
+        "Topic",
+        "Module",
+    ]
+
+    df, completion_filter_section = filter_allowed_values(
+        df,
+        column="completion_type",
+        allowed_values=allowed_completion_types,
+        label=f"{DATASET_NAME}.{DATASET_TABLE} completion_type allowed-values filter summary",
+    )
+
+    # --- quality report ---
     print_quality_report(
         df,
         dataset_name=DATASET_NAME,
@@ -132,6 +121,7 @@ def main(raw_base: str, out_base: str):
         ],
         table_name=DATASET_TABLE,
         output_base_dir=OUT_BASE,
+        extra_sections=[completion_filter_section],
     )
 
 
