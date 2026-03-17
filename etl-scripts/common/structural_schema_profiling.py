@@ -285,17 +285,19 @@ def profile_top_values(
 
         non_missing_df = df.where(~cond_missing)
 
-        if non_missing_df.rdd.isEmpty():  # no non-missing values for this column
-            continue
+        group_col = col_expr.cast("string").alias(c)
 
         top_k = (
             non_missing_df
-            .groupBy(col_expr)
+            .groupBy(group_col)
             .agg(F.count(F.lit(1)).alias("count"))
             .orderBy(F.desc("count"))
             .limit(k)
             .collect()
         )
+
+        if not top_k:
+            continue
 
         for row in top_k:
             value = row[c]
