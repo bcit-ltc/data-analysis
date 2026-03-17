@@ -31,6 +31,8 @@ def read_csv(path: str, schema: StructType):
         .format("csv")
         .option("header", "true")
         .option("mode", "PERMISSIVE")
+        .option("quote", "\"")
+        .option("escape", "\"")
         .schema(schema)
         .load(path)
     )

@@ -25,6 +25,8 @@ def read_csv(path: str, schema: StructType):
         .format("csv")
         .option("header", "true")
         .option("mode", "PERMISSIVE")
+        .option("quote", "\"")
+        .option("escape", "\"")
         .schema(schema)
         .load(path)
     )
@@ -58,6 +60,32 @@ def main(raw_base: str, out_base: str):
 
     # --- Load your dataset here
     content_objects_raw = read_csv(f"{RAW_BASE}/Content/ContentObjects.csv", content_objects_schema)
+
+    # Original D2L timestamp columns that can contain garbage or extreme year values.
+    # We will null out any values whose year falls outside the safe Python datetime
+    # range so later profiling/collection steps cannot raise overflow errors.
+    timestamp_columns = [
+        "StartDate",
+        "EndDate",
+        "DueDate",
+        "LastModified",
+        "DeletedDate",
+    ]
+    # Only clamp columns that actually exist in the current file/schema.
+    # Values with a year < 1 or > 9999 are treated as invalid and set to NULL.
+    for col_name in timestamp_columns:
+        if col_name in content_objects_raw.columns:
+            content_objects_raw = content_objects_raw.withColumn(
+                col_name,
+                F.when(
+                    F.col(col_name).isNotNull()
+                    & (
+                        (F.year(F.col(col_name)) < F.lit(1))
+                        | (F.year(F.col(col_name)) > F.lit(9999))
+                    ),
+                    F.lit(None).cast("timestamp"),
+                ).otherwise(F.col(col_name)),
+            )
 
     # --- structural + schema profiling (step 1) ---
     print_structural_profile(
